@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+	<name>RimBattle</name>
+	<author>Andreas Pardeike</author>
+	<supportedVersions>
+		<li>1.0</li>
+	</supportedVersions>
+	<description>This mod is an extension to the Multiplayer mod and introduces BattleField(tm) like fighting with respawns, a ticket system and capturing tiles.
+
+Powered by Harmony Patch Library
+
+Andreas Pardeike
+Email: andreas@pardeike.net
+Steam: pardeike
+Twitter: @pardeike</description>
+</ModMetaData>
