@@ -1,88 +1,82 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using Verse;
 
 namespace RimBattle
 {
-	class BattleOverview : Window
+	public class BattleOverview
 	{
-		public override Vector2 InitialSize => new Vector2(100f + 200f, 125f + 200f);
+		readonly MiniMap[] minimaps = new MiniMap[] { null, null, null, null, null, null, null };
+		public bool showing = false;
+		int mapCounter = -1;
 
-		public override void WindowUpdate()
+		public void OnGUI()
 		{
-			base.WindowUpdate();
+			if (Event.current.type == EventType.Layout)
+				return;
+			if (Event.current.type != EventType.Repaint)
+				return;
+			if (!showing)
+				return;
+
+			Draw();
+		}
+
+		public void Update()
+		{
+			if (mapCounter == -1)
+			{
+				for (var i = 0; i < 7; i++)
+				{
+					if (minimaps[i] == null)
+						minimaps[i] = new MiniMap(Refs.controller.MapByIndex(i));
+					minimaps[i].UpdateTexture();
+				}
+				return;
+			}
+
 			if (Find.TickManager.TicksGame % 100 == 0)
-				UpdateTexture(Find.CurrentMap);
+			{
+				mapCounter = (mapCounter + 1) % 7;
+				if (minimaps[mapCounter] == null)
+					minimaps[mapCounter] = new MiniMap(Refs.controller.MapByIndex(mapCounter));
+				minimaps[mapCounter].UpdateTexture();
+			}
 		}
 
-		public override void DoWindowContents(Rect inRect)
+		public void Draw()
 		{
-			Minimap(inRect);
-		}
+			var aroundspace = 35;
+			var bottomspace = 45;
+			var innerspace = 4;
+			var halfspace = innerspace / 2;
+			var topLeft = new Vector2(aroundspace, aroundspace);
+			var midX = UI.screenWidth / 2;
+			var dx = (UI.screenWidth - aroundspace - aroundspace - 2 * innerspace) / 3;
+			var dz = (UI.screenHeight - aroundspace - bottomspace - 2 * innerspace) / 3;
+			var dim = Math.Min(dx, dz);
+			var halfdim = dim / 2;
 
-		static void UpdateTexture(Map map)
-		{
-			if (Refs.MapTexture.width != map.Size.x * Refs.mapRes)
+			// ---#3#-#2#---
+			// -#4#-#0#-#1#-
+			// ---#5#-#6#---
+
+			var offsets = new[]
 			{
-				Refs.MapTexture.Resize(map.Size.x * Refs.mapRes, map.Size.z * Refs.mapRes);
-				Refs.MapTexture.Apply(true);
-			}
-			foreach (var c in map.AllCells)
-				ProcessCell(c, map);
-			Refs.MapTexture.Apply(true);
-		}
+				/* 0 */ new Vector2(midX - halfdim, dim + innerspace),
+				/* 1 */ new Vector2(midX + halfdim + innerspace, dim + innerspace),
+				/* 2 */ new Vector2(midX + halfspace, 0),
+				/* 3 */ new Vector2(midX - halfspace - dim, 0),
+				/* 4 */ new Vector2(midX - halfdim - innerspace - dim, dim + innerspace),
+				/* 5 */ new Vector2(midX - halfspace - dim, dim + innerspace + dim + innerspace),
+				/* 6 */ new Vector2(midX + halfspace, dim + innerspace + dim + innerspace)
+			};
 
-		static void ProcessCell(IntVec3 c, Map map)
-		{
-			var edifice = c.GetEdifice(map);
-			if (edifice != null)
+			for (var i = 0; i < 7; i++)
 			{
-				var filled = edifice.def.Fillage == FillCategory.Full && !edifice.def.IsDoor;
-				Set(c.x, c.z, Refs.edificeColor * (filled ? 1f : 0.5f));
-				return;
+				var mapRect = new Rect(topLeft + offsets[i], new Vector2(dim, dim)); ;
+				minimaps[i]?.Draw(mapRect);
 			}
-
-			if (c.GetTerrain(map).IsWater)
-			{
-				Set(c.x, c.z, Refs.WaterColor);
-				return;
-			}
-
-			if (Refs.showPlants && c.GetPlant(map) != null)
-			{
-				Set(c.x, c.z, Refs.PlantColor);
-				return;
-			}
-
-			Set(c.x, c.z, Refs.GroundColor);
-			return;
-		}
-
-		static void Set(int x, int y, Color c)
-		{
-			if (Refs.mapRes == 1)
-			{
-				Refs.MapTexture.SetPixel(x, y, c);
-				return;
-			}
-
-			x *= Refs.mapRes;
-			y *= Refs.mapRes;
-			for (var i = 0; i < Refs.mapRes; i++)
-				for (var j = 0; j < Refs.mapRes; j++)
-					Refs.MapTexture.SetPixel(x + i, y + j, c);
-		}
-
-		static void Minimap(Rect inRect)
-		{
-			var map = Find.CurrentMap;
-			UpdateTexture(map);
-
-			var rect = inRect.ContractedBy(1f);
-			GUI.BeginClip(rect);
-			GUI.BeginGroup(inRect);
-			Widgets.DrawTextureFitted(new Rect(0f, 0f, inRect.width, inRect.height), Refs.MapTexture, 1f);
-			GUI.EndGroup();
-			GUI.EndClip();
 		}
 	}
 }

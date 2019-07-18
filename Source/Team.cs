@@ -66,7 +66,7 @@ namespace RimBattle
 
 		public override string ToString()
 		{
-			return "Team " + name;
+			return $"Team {name}";
 		}
 	}
 }

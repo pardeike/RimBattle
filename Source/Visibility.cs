@@ -28,17 +28,12 @@ namespace RimBattle
 
 		public void MakeVisible(IntVec3 cell)
 		{
-			FileLog.LogBuffered("set " + cell.x + "," + cell.z + " 1");
-
 			visible[map.cellIndices.CellToIndex(cell)] = true;
 			map.mapDrawer.MapMeshDirty(cell, MapMeshFlag.FogOfWar);
 		}
 
 		public bool IsVisible(int idx)
 		{
-			var cell = map.cellIndices.IndexToCell(idx);
-			FileLog.LogBuffered("get " + cell.x + "," + cell.z + (visible[idx] ? " 1" : " 0"));
-
 			return visible[idx];
 		}
 

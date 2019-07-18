@@ -10,6 +10,7 @@ namespace RimBattle
 	static class Refs
 	{
 		public static GameController controller;
+		public static readonly int forceMapSize = 120;
 
 		public static readonly int defaultVisibleRange = 6;
 		public static readonly Dictionary<float, HashSet<IntVec3>> circleCache = new Dictionary<float, HashSet<IntVec3>>();
@@ -27,21 +28,16 @@ namespace RimBattle
 			validWithoutMap = true
 		};
 
-		public static readonly Texture2D MapTexture = new Texture2D(255, 255, TextureFormat.RGB24, true);
-		public static readonly int mapRes = 2;
-		public static readonly bool showPlants = true;
-		public static readonly Color edificeColor = Color.grey;
-		public static readonly Color PrisonerColor = Color.yellow;
-		public static readonly Color HostilesColor = Color.red;
-		public static readonly Color AnimalColor = Color.green;
-		public static readonly Color ColonistColor = Color.cyan;
-		public static readonly Color FriendliesColor = Color.blue;
-		public static readonly Color EdificeColor = Color.grey;
-		public static readonly Color GroundColor = new ColorInt(7, 8, 13).ToColor;
-		public static readonly Color WaterColor = new ColorInt(21, 63, 73).ToColor;
-		public static readonly Color FogColor = new ColorInt(20, 20, 20).ToColor;
-		public static readonly Color PlantColor = new Color(0.322f, 0.408f, 0.322f);
+		public static readonly Color notVisibleColor = new ColorInt(32, 32, 32).ToColor;
+		public static readonly Color fogColor = new ColorInt(61, 53, 51).ToColor;
+		public static readonly Color edificeColor = new ColorInt(113, 109, 93).ToColor;
+		public static readonly Color waterColor = new ColorInt(45, 96, 167).ToColor;
+		public static readonly Color plantColor = new ColorInt(79, 79, 31).ToColor;
+		public static readonly Color groundColor = new ColorInt(100, 77, 58).ToColor;
+		public static readonly Color mountainColor = new ColorInt(58, 63, 63).ToColor;
+		public static readonly Color animalColor = new ColorInt(128, 128, 128).ToColor;
 
+		public static readonly Texture2D MiniMapBG = ContentFinder<Texture2D>.Get("MiniMapBG", true);
 		public static readonly Material UndiscovereddMat = MaterialPool.MatFrom("Undiscovered", ShaderDatabase.MoteGlow);
 		public static readonly Material MouseTileError = MaterialPool.MatFrom("MouseTileError", ShaderDatabase.WorldOverlayAdditive, 3560);
 		public static readonly Material SelectedTileError = MaterialPool.MatFrom("SelectedTileError", ShaderDatabase.WorldOverlayAdditive, 3560);

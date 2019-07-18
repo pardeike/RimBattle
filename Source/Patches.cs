@@ -1,14 +1,28 @@
 ﻿using Harmony;
 using RimWorld;
 using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Verse;
 
 namespace RimBattle
 {
-	using CodeInstructions = IEnumerable<CodeInstruction>;
+	using Instructions = IEnumerable<CodeInstruction>;
+
+	// use 5% world coverage
+	//
+	[HarmonyPatch(typeof(Page_CreateWorldParams))]
+	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
+	static class Page_CreateWorldParams_PreOpen_Patch
+	{
+		static void Postfix(ref float ___planetCoverage)
+		{
+			___planetCoverage = 0.05f;
+		}
+	}
 
 	// initialize our world component early and save a ref to it
 	//
@@ -19,6 +33,17 @@ namespace RimBattle
 		static void Postfix(World __instance)
 		{
 			Refs.controller = __instance.GetComponent<GameController>();
+		}
+	}
+
+	// battle maps rendering
+	[HarmonyPatch(typeof(ColonistBar))]
+	[HarmonyPatch(nameof(ColonistBar.ColonistBarOnGUI))]
+	static class ColonistBar_ColonistBarOnGUI_Patch
+	{
+		static void Postfix()
+		{
+			Refs.controller.BattleOverview.OnGUI();
 		}
 	}
 
@@ -37,7 +62,7 @@ namespace RimBattle
 				var tiles = Tools.CalculateTiles(center);
 				if (Tools.CheckTiles(tiles))
 				{
-					Refs.controller.startingTiles = tiles;
+					Refs.controller.tiles = tiles.ToList();
 					__result = true;
 					return;
 				}
@@ -72,6 +97,18 @@ namespace RimBattle
 		{
 			__result = 7;
 			return false;
+		}
+	}
+
+	// skip pawn selection screen
+	//
+	[HarmonyPatch(typeof(ScenPart_ConfigPage))]
+	[HarmonyPatch(nameof(ScenPart_ConfigPage.GetConfigPages))]
+	static class ScenPart_ConfigPage_GetConfigPages_Patch
+	{
+		static IEnumerable<Page> Postfix(IEnumerable<Page> pages)
+		{
+			return pages.Where(page => page.GetType() != typeof(Page_ConfigureStartingPawns));
 		}
 	}
 
@@ -114,29 +151,7 @@ namespace RimBattle
 
 		static void Postfix(ref float __result, StatDef stat)
 		{
-			// much faster
-			if (stat == StatDefOf.ConstructionSpeed) { __result *= 10f; return; }
-			if (stat == StatDefOf.ConstructionSpeedFactor) { __result *= 10f; return; }
-			if (stat == StatDefOf.ResearchSpeed) { __result *= 10f; return; }
-			if (stat == StatDefOf.ResearchSpeedFactor) { __result *= 10f; return; }
-			if (stat == StatDefOf.PlantWorkSpeed) { __result *= 10f; return; }
-			if (stat == StatDefOf.SmoothingSpeed) { __result *= 10f; return; }
-			if (stat == StatDefOf.UnskilledLaborSpeed) { __result *= 10f; return; }
-			if (stat == StatDefOf.AnimalGatherSpeed) { __result *= 10f; return; }
-			if (stat == StatDefOf.ImmunityGainSpeed) { __result *= 10f; return; }
-			if (stat == StatDefOf.ImmunityGainSpeedFactor) { __result *= 10f; return; }
-			if (stat == StatDefOf.WorkTableWorkSpeedFactor) { __result *= 10f; return; }
-
-			// chances
-			if (stat == StatDefOf.ConstructSuccessChance) { __result *= 2f; return; }
-			if (stat == StatDefOf.TameAnimalChance) { __result *= 2f; return; }
-
-			// delays
-			if (stat == StatDefOf.EquipDelay) { __result /= 2f; return; }
-
-			// faster
-			if (stat == StatDefOf.EatingSpeed) { __result *= 2f; return; }
-			if (stat == StatDefOf.MiningSpeed) { __result *= 2f; return; }
+			Tools.TweakStat(stat, ref __result);
 		}
 	}
 
@@ -190,7 +205,7 @@ namespace RimBattle
 		}
 	}
 
-	// fake fog
+	// fake IsFogged 1
 	//
 	[HarmonyPatch(typeof(FogGrid))]
 	[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(IntVec3) })]
@@ -213,6 +228,9 @@ namespace RimBattle
 			return true;
 		}
 	}
+
+	// fake IsFogged 2
+	//
 	[HarmonyPatch(typeof(FogGrid))]
 	[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(int) })]
 	static class FogGrid_IsFogged2_Patch
@@ -228,14 +246,16 @@ namespace RimBattle
 			return true;
 		}
 	}
+
+	// fake fog graphics
+	//
 	[HarmonyPatch(typeof(SectionLayer_FogOfWar))]
 	[HarmonyPatch(nameof(SectionLayer_FogOfWar.Regenerate))]
 	static class SectionLayer_FogOfWar_Regenerate__Patch
 	{
-#pragma warning disable IDE0060
-		static CodeInstructions Transpiler(CodeInstructions instructions)
-#pragma warning restore IDE0060
+		static Instructions Transpiler(Instructions instructions)
 		{
+			instructions.GetHashCode(); // make compiler happy
 			var replacement = SymbolExtensions.GetMethodInfo(() => Tools.Regenerate(null));
 			yield return new CodeInstruction(OpCodes.Ldarg_0);
 			yield return new CodeInstruction(OpCodes.Call, replacement);
@@ -243,31 +263,40 @@ namespace RimBattle
 		}
 	}
 
-	/*[HarmonyPatch(typeof(Frame))]
-	[HarmonyPatch(nameof(Frame.CompleteConstruction))]
-	static class Frame_CompleteConstruction_Patch
+	// hide overlays if not discovered yet
+	//
+	[HarmonyPatch(typeof(OverlayDrawer))]
+	[HarmonyPatch(nameof(OverlayDrawer.DrawAllOverlays))]
+	static class OverlayDrawer_DrawAllOverlays_Patch
 	{
-		static Thing Spawn(Thing newThing, IntVec3 loc, Map map, Rot4 rot, WipeMode wipeMode, bool respawningAfterLoad, Pawn creator)
+		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
-			var result = GenSpawn.Spawn(newThing, loc, map, rot, wipeMode, respawningAfterLoad);
-			// TODO: creator build something
-			return result;
-		}
+			Func<Thing, bool> IsVisible = (thing) =>
+			{
+				var map = thing.Map;
+				if (map == null) return false;
+				if (Refs.controller.mapParts == null) return false;
+				if (Refs.controller.mapParts.TryGetValue(map, out var part) == false) return false;
+				if (part == null) return false;
+				return part.visibility.IsVisible(thing.Position);
+			};
 
-		static CodeInstructions Transpiler(CodeInstructions instructions)
-		{
-			var m_Spawn = SymbolExtensions.GetMethodInfo(() => GenSpawn.Spawn(null, IntVec3.Zero, null, Rot4.Invalid, WipeMode.FullRefund, false));
 			foreach (var instruction in instructions)
 			{
-				if (instruction.opcode == OpCodes.Call)
-					if (instruction.operand == m_Spawn)
-					{
-						yield return new CodeInstruction(OpCodes.Ldarg_1);
-						instruction.operand = SymbolExtensions.GetMethodInfo(() => Spawn(default, default, default, default, default, false, default));
-					}
-
 				yield return instruction;
+
+				if (instruction.opcode == OpCodes.Stloc_2 && IsVisible != null)
+				{
+					yield return new CodeInstruction(OpCodes.Ldnull);
+					yield return new CodeInstruction(OpCodes.Ldloc_2);
+					yield return new CodeInstruction(OpCodes.Call, IsVisible.Method);
+					var label = generator.DefineLabel();
+					yield return new CodeInstruction(OpCodes.Brtrue, label);
+					yield return new CodeInstruction(OpCodes.Ret);
+					yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
+					IsVisible = null;
+				}
 			}
 		}
-	}*/
+	}
 }

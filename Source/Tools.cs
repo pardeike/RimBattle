@@ -31,16 +31,16 @@ namespace RimBattle
 		//
 		public static IEnumerable<Settlement> CreateSettlements()
 		{
-			foreach (var tile in Refs.controller.startingTiles)
+			var tiles = Refs.controller.tiles;
+			for (var i = 0; i < tiles.Count(); i++)
 			{
+				var tile = tiles[i];
 				var settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
 				settlement.SetFaction(Find.GameInitData.playerFaction);
 				settlement.Tile = tile;
 				settlement.Name = NameGenerator.GenerateName(Faction.OfPlayer.def.settlementNameMaker);
 				Find.WorldObjects.Add(settlement);
 				yield return settlement;
-
-				break; // TODO
 			}
 		}
 
@@ -52,7 +52,7 @@ namespace RimBattle
 			var game = Current.Game;
 
 			var str = LoadedModManager.RunningMods.Select(mod => mod.ToString()).ToCommaList(false);
-			Log.Message("Initializing new game with mods " + str, false);
+			Log.Message($"Initializing new game with mods {str}", false);
 			if (game.Maps.Any<Map>())
 			{
 				Log.Error("Called InitNewGame() but there already is a map. There should be 0 maps...", false);
@@ -63,14 +63,17 @@ namespace RimBattle
 				Log.Error("Called InitNewGame() but init data is null. Create it first.", false);
 				return;
 			}
+			if (Refs.forceMapSize > 0)
+				game.InitData.mapSize = Refs.forceMapSize;
+
 			MemoryUtility.UnloadUnusedUnityAssets();
 			DeepProfiler.Start("InitNewGame");
 			try
 			{
 				Current.ProgramState = ProgramState.MapInitializing;
 
-				var intVec = new IntVec3(game.InitData.mapSize, 1, game.InitData.mapSize);
-				game.World.info.initialMapSize = intVec;
+				var mapSize = new IntVec3(game.InitData.mapSize, 1, game.InitData.mapSize);
+				game.World.info.initialMapSize = mapSize;
 				if (game.InitData.permadeath)
 				{
 					game.Info.permadeathMode = true;
@@ -82,7 +85,7 @@ namespace RimBattle
 				foreach (var settlement in CreateSettlements())
 				{
 					RecreateNewColonists();
-					var map = MapGenerator.GenerateMap(intVec, settlement, settlement.MapGeneratorDef, settlement.ExtraGenStepDefs, null);
+					var map = MapGenerator.GenerateMap(mapSize, settlement, settlement.MapGeneratorDef, settlement.ExtraGenStepDefs, null);
 					PawnUtility.GiveAllStartingPlayerPawnsThought(ThoughtDefOf.NewColonyOptimism);
 					Team.CreateWithColonistsOnMap(map);
 					Refs.controller.CreateMapPart(map);
@@ -116,6 +119,33 @@ namespace RimBattle
 			{
 				DeepProfiler.End();
 			}
+		}
+
+		public static void TweakStat(StatDef stat, ref float result)
+		{
+			// much faster
+			if (stat == StatDefOf.ConstructionSpeed) { result *= 10f; return; }
+			if (stat == StatDefOf.ConstructionSpeedFactor) { result *= 10f; return; }
+			if (stat == StatDefOf.ResearchSpeed) { result *= 10f; return; }
+			if (stat == StatDefOf.ResearchSpeedFactor) { result *= 10f; return; }
+			if (stat == StatDefOf.PlantWorkSpeed) { result *= 10f; return; }
+			if (stat == StatDefOf.SmoothingSpeed) { result *= 10f; return; }
+			if (stat == StatDefOf.UnskilledLaborSpeed) { result *= 10f; return; }
+			if (stat == StatDefOf.AnimalGatherSpeed) { result *= 10f; return; }
+			if (stat == StatDefOf.ImmunityGainSpeed) { result *= 10f; return; }
+			if (stat == StatDefOf.ImmunityGainSpeedFactor) { result *= 10f; return; }
+			if (stat == StatDefOf.WorkTableWorkSpeedFactor) { result *= 10f; return; }
+
+			// chances
+			if (stat == StatDefOf.ConstructSuccessChance) { result *= 2f; return; }
+			if (stat == StatDefOf.TameAnimalChance) { result *= 2f; return; }
+
+			// delays
+			if (stat == StatDefOf.EquipDelay) { result /= 2f; return; }
+
+			// faster
+			if (stat == StatDefOf.EatingSpeed) { result *= 2f; return; }
+			if (stat == StatDefOf.MiningSpeed) { result *= 2f; return; }
 		}
 
 		// given a center tile, returns a list of surrounding tiles (r,tr,tl,l,bl,br)

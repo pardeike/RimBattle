@@ -36,6 +36,7 @@
   <ItemGroup>
     <Compile Include="BattleOverview.cs" />
     <Compile Include="MapPart.cs" />
+    <Compile Include="MiniMap.cs" />
     <Compile Include="Misc\CrossPromotion.cs" />
     <Compile Include="GameController.cs" />
     <Compile Include="Misc\MainButtonWorker_ToggleBattle.cs" />
@@ -49,6 +50,8 @@
     <Compile Include="Tools.cs" />
     <Compile Include="Misc\WorldLayer_MouseExtraTile.cs" />
     <Compile Include="Misc\WorldLayer_SelectedExtraTiles.cs" />
+    <None Include="packages.config" />
+    <None Include="TranspilerHelpers.cs" />
     <Compile Include="Visibility.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -69,9 +72,6 @@
       <HintPath>D:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

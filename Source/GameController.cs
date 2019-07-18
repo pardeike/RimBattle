@@ -7,9 +7,13 @@ namespace RimBattle
 {
 	public class GameController : WorldComponent
 	{
-		public int[] startingTiles; // temporary
+		// ---#3#-#2#---
+		// -#4#-#0#-#1#-
+		// ---#5#-#6#---
+		public List<int> tiles;
 
 		public int myTeamID;
+		public BattleOverview battleOverview;
 		public Dictionary<Map, MapPart> mapParts;
 		public List<Team> teams = new List<Team>();
 
@@ -27,6 +31,21 @@ namespace RimBattle
 			mapParts[map] = new MapPart(map);
 		}
 
+		public BattleOverview BattleOverview
+		{
+			get
+			{
+				if (battleOverview == null)
+					battleOverview = new BattleOverview();
+				return battleOverview;
+			}
+		}
+
+		public override void WorldComponentTick()
+		{
+			BattleOverview.Update();
+		}
+
 		public Map MapForTile(int tile)
 		{
 			return mapParts
@@ -34,9 +53,15 @@ namespace RimBattle
 				.FirstOrDefault(map => map.Tile == tile);
 		}
 
+		public Map MapByIndex(int n)
+		{
+			return MapForTile(tiles[n]);
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
+			Scribe_Collections.Look(ref tiles, "tiles");
 			Scribe_Values.Look(ref myTeamID, "myTeamID");
 			Scribe_Collections.Look(ref mapParts, "mapParts", LookMode.Reference, LookMode.Deep, ref tmpMaps, ref tmpMapParts);
 			Scribe_Collections.Look(ref teams, "teams", LookMode.Deep);

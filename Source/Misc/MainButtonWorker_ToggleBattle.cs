@@ -4,8 +4,6 @@ using Verse.Sound;
 
 namespace RimBattle
 {
-	/* new Dialog_FormCaravan(Find.CurrentMap, false, null, false) */
-
 	[StaticConstructorOnStartup]
 	public static class RimBattleButtonDefOf
 	{
@@ -17,21 +15,18 @@ namespace RimBattle
 
 	public class MainButtonWorker_ToggleBattle : MainButtonWorker
 	{
-		static BattleOverview window;
-
 		public override void Activate()
 		{
 			if (Find.MainTabsRoot.OpenTab != null)
 				Find.MainTabsRoot.EscapeCurrentTab(false);
-			if (Find.WindowStack.IsOpen<BattleOverview>())
-			{
-				Find.WindowStack.TryRemove(window);
+
+			var battleOverview = Refs.controller.BattleOverview;
+			battleOverview.showing = !battleOverview.showing;
+
+			if (battleOverview.showing)
+				SoundDefOf.TabOpen.PlayOneShotOnCamera(null);
+			else
 				SoundDefOf.TabClose.PlayOneShotOnCamera(null);
-				return;
-			}
-			window = new BattleOverview();
-			Find.WindowStack.Add(window);
-			SoundDefOf.TabOpen.PlayOneShotOnCamera(null);
 		}
 
 		public override float ButtonBarPercent => Refs.controller.ProgressPercent;
