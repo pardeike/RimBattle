@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using UnityEngine;
 using Verse;
 
 namespace RimBattle
@@ -36,19 +37,117 @@ namespace RimBattle
 		}
 	}
 
-	// battle maps rendering
+	// getting our own OnGUI
+	//
+	[HarmonyPatch(typeof(UIRoot))]
+	[HarmonyPatch(nameof(UIRoot.UIRootOnGUI))]
+	static class UIRoot_UIRootOnGUI_Patch
+	{
+		static void Postfix()
+		{
+			Refs.controller?.OnGUI();
+		}
+	}
+
+	// hide colonist bar if battle map is showing
+	//
 	[HarmonyPatch(typeof(ColonistBar))]
 	[HarmonyPatch(nameof(ColonistBar.ColonistBarOnGUI))]
 	static class ColonistBar_ColonistBarOnGUI_Patch
 	{
+		static bool Prefix()
+		{
+			return (Refs.controller?.battleOverview?.showing ?? true) == false;
+		}
+	}
+
+	// show only our teams colonists
+	//
+	[HarmonyPatch(typeof(ColonistBar))]
+	[HarmonyPatch("CheckRecacheEntries")]
+	static class ColonistBar_CheckRecacheEntries_Patch
+	{
+		public static IEnumerable<Pawn> OurFreeColonists(MapPawns mapPawns)
+		{
+			return mapPawns.FreeColonists
+				.Where(c => c.Map == Find.CurrentMap);
+		}
+
+		public static List<Pawn> OurAllPawnsSpawned(MapPawns mapPawns)
+		{
+			return mapPawns.AllPawnsSpawned
+				.Where(c => c.Map == Find.CurrentMap)
+				.ToList();
+		}
+
+		static Instructions Transpiler(Instructions instructions)
+		{
+			var m_get_FreeColonists = AccessTools.Property(typeof(MapPawns), "FreeColonists").GetGetMethod();
+			var m_OurFreeColonists = SymbolExtensions.GetMethodInfo(() => OurFreeColonists(null));
+			var m_get_AllPawnsSpawned = AccessTools.Property(typeof(MapPawns), "AllPawnsSpawned").GetGetMethod();
+			var m_OurAllPawnsSpawned = SymbolExtensions.GetMethodInfo(() => OurAllPawnsSpawned(null));
+			foreach (var instruction in instructions)
+			{
+				if (instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt)
+				{
+					if (instruction.operand == m_get_FreeColonists)
+					{
+						instruction.opcode = OpCodes.Call;
+						instruction.operand = m_OurFreeColonists;
+					}
+					if (instruction.operand == m_get_AllPawnsSpawned)
+					{
+						instruction.opcode = OpCodes.Call;
+						instruction.operand = m_OurFreeColonists;
+					}
+				}
+				yield return instruction;
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(MapInterface))]
+	[HarmonyPatch(nameof(MapInterface.Notify_SwitchedMap))]
+	static class MapInterface_Notify_SwitchedMap_Patch
+	{
 		static void Postfix()
 		{
-			Refs.controller.BattleOverview.OnGUI();
+			Find.ColonistBar.MarkColonistsDirty();
+		}
+	}
+
+	// hide pawn labels if battle map is showing
+	//
+	[HarmonyPatch(typeof(GenMapUI))]
+	[HarmonyPatch("DrawPawnLabel")]
+	[HarmonyPatch(new Type[] { typeof(Pawn), typeof(Vector2), typeof(float), typeof(float), typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) })]
+	static class GenMapUI_DrawPawnLabel_Patch
+	{
+		static bool Prefix()
+		{
+			return (Refs.controller?.battleOverview?.showing ?? true) == false;
+		}
+	}
+
+	// adding vanilla keybindings
+	//
+	[HarmonyPatch(typeof(DefGenerator))]
+	[HarmonyPatch(nameof(DefGenerator.GenerateImpliedDefs_PostResolve))]
+	static class DefGenerator_GenerateImpliedDefs_PostResolve_Patch
+	{
+		static void Postfix()
+		{
+			AccessTools.GetDeclaredFields(typeof(Keys))
+				.Do(field =>
+				{
+					var keyDef = field.GetValue(null) as KeyBindingDef;
+					DefDatabase<KeyBindingDef>.Add(keyDef);
+				});
 		}
 	}
 
 	// intercept the next button on world tile select page and store
-	// the 7 result cells (if all are ok)
+	// the resulting cells (if all are ok)
 	//
 	[HarmonyPatch(typeof(Page_SelectStartingSite))]
 	[HarmonyPatch("CanDoNext")]
@@ -95,8 +194,32 @@ namespace RimBattle
 	{
 		static bool Prefix(ref int __result)
 		{
-			__result = 7;
+			__result = 7; // maximum
 			return false;
+		}
+	}
+
+	// allow empty settlements
+	//
+	[HarmonyPatch(typeof(ScenPart_PlayerPawnsArriveMethod))]
+	[HarmonyPatch(nameof(ScenPart_PlayerPawnsArriveMethod.GenerateIntoMap))]
+	static class ScenPart_PlayerPawnsArriveMethod_GenerateIntoMap_Patch
+	{
+		static bool Prefix()
+		{
+			return Find.GameInitData.startingAndOptionalPawns.Any();
+		}
+	}
+
+	//
+	//
+	[HarmonyPatch(typeof(Page_CreateWorldParams))]
+	[HarmonyPatch(nameof(Page_CreateWorldParams.DoWindowContents))]
+	static class Page_CreateWorldParams_DoWindowContents_Patch
+	{
+		static void Postfix(Rect rect)
+		{
+			ConfigGUI.DoWindowContents(rect);
 		}
 	}
 

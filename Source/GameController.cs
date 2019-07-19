@@ -1,15 +1,18 @@
 ﻿using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Verse;
 
 namespace RimBattle
 {
 	public class GameController : WorldComponent
 	{
-		// ---#3#-#2#---
-		// -#4#-#0#-#1#-
-		// ---#5#-#6#---
+		public static int tileCount = 5;
+		public static int teamCount = 3;
+		public static int totalTickets = 20;
+		public static int maxQuadrums = 8; // 2 years
+
 		public List<int> tiles;
 
 		public int myTeamID;
@@ -25,6 +28,8 @@ namespace RimBattle
 			myTeamID = 1; // TODO
 			mapParts = new Dictionary<Map, MapPart>();
 		}
+
+		public static int[] TilePattern => Refs.teamTiles[tileCount - 2][tileCount - 2];
 
 		public void CreateMapPart(Map map)
 		{
@@ -56,6 +61,17 @@ namespace RimBattle
 		public Map MapByIndex(int n)
 		{
 			return MapForTile(tiles[n]);
+		}
+
+		public void OnGUI()
+		{
+			if (Keys.BattleMap.KeyDownEvent)
+			{
+				Event.current.Use();
+				MainButtonWorker_ToggleBattle.Toggle();
+			}
+
+			BattleOverview.OnGUI();
 		}
 
 		public override void ExposeData()

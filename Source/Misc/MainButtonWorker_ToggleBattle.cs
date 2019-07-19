@@ -15,7 +15,7 @@ namespace RimBattle
 
 	public class MainButtonWorker_ToggleBattle : MainButtonWorker
 	{
-		public override void Activate()
+		public static void Toggle()
 		{
 			if (Find.MainTabsRoot.OpenTab != null)
 				Find.MainTabsRoot.EscapeCurrentTab(false);
@@ -27,6 +27,11 @@ namespace RimBattle
 				SoundDefOf.TabOpen.PlayOneShotOnCamera(null);
 			else
 				SoundDefOf.TabClose.PlayOneShotOnCamera(null);
+		}
+
+		public override void Activate()
+		{
+			Toggle();
 		}
 
 		public override float ButtonBarPercent => Refs.controller.ProgressPercent;

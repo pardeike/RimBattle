@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -6,30 +7,27 @@ namespace RimBattle
 {
 	public class BattleOverview
 	{
+		const int outerspace = 20;
+		const int tabBarHeight = 35;
+
 		readonly MiniMap[] minimaps = new MiniMap[] { null, null, null, null, null, null, null };
 		public bool showing = false;
 		int mapCounter = -1;
 
 		public void OnGUI()
 		{
-			if (Event.current.type == EventType.Layout)
-				return;
-			if (Event.current.type != EventType.Repaint)
-				return;
-			if (!showing)
-				return;
-
-			Draw();
+			if (showing)
+				Draw();
 		}
 
 		public void Update()
 		{
 			if (mapCounter == -1)
 			{
-				for (var i = 0; i < 7; i++)
+				for (var i = 0; i < GameController.tileCount; i++)
 				{
 					if (minimaps[i] == null)
-						minimaps[i] = new MiniMap(Refs.controller.MapByIndex(i));
+						minimaps[i] = new MiniMap(i);
 					minimaps[i].UpdateTexture();
 				}
 				return;
@@ -37,44 +35,95 @@ namespace RimBattle
 
 			if (Find.TickManager.TicksGame % 100 == 0)
 			{
-				mapCounter = (mapCounter + 1) % 7;
+				mapCounter = (mapCounter + 1) % GameController.tileCount;
 				if (minimaps[mapCounter] == null)
-					minimaps[mapCounter] = new MiniMap(Refs.controller.MapByIndex(mapCounter));
+					minimaps[mapCounter] = new MiniMap(mapCounter);
 				minimaps[mapCounter].UpdateTexture();
 			}
 		}
 
 		public void Draw()
 		{
-			var aroundspace = 35;
-			var bottomspace = 45;
+			DrawBackground();
+			DrawMaps();
+		}
+
+		private void DrawBackground()
+		{
+			if (Event.current.type != EventType.Repaint)
+				return;
+
+			var rect = new Rect(0, 0, UI.screenWidth, UI.screenHeight - tabBarHeight);
+			Widgets.DrawBoxSolid(rect, new Color(0f, 0f, 0f, 0.6f));
+		}
+
+		private void DrawMaps()
+		{
+			var devToolsHeight = Prefs.DevMode ? 25 : 0;
+
 			var innerspace = 4;
 			var halfspace = innerspace / 2;
-			var topLeft = new Vector2(aroundspace, aroundspace);
 			var midX = UI.screenWidth / 2;
-			var dx = (UI.screenWidth - aroundspace - aroundspace - 2 * innerspace) / 3;
-			var dz = (UI.screenHeight - aroundspace - bottomspace - 2 * innerspace) / 3;
-			var dim = Math.Min(dx, dz);
-			var halfdim = dim / 2;
+			var topSpace = outerspace + devToolsHeight;
 
-			// ---#3#-#2#---
-			// -#4#-#0#-#1#-
-			// ---#5#-#6#---
-
-			var offsets = new[]
+			Vector2[] Positions(int n, out int dim)
 			{
-				/* 0 */ new Vector2(midX - halfdim, dim + innerspace),
-				/* 1 */ new Vector2(midX + halfdim + innerspace, dim + innerspace),
-				/* 2 */ new Vector2(midX + halfspace, 0),
-				/* 3 */ new Vector2(midX - halfspace - dim, 0),
-				/* 4 */ new Vector2(midX - halfdim - innerspace - dim, dim + innerspace),
-				/* 5 */ new Vector2(midX - halfspace - dim, dim + innerspace + dim + innerspace),
-				/* 6 */ new Vector2(midX + halfspace, dim + innerspace + dim + innerspace)
-			};
+				var dx = (UI.screenWidth - 2 * outerspace - 2 * innerspace) / 3;
+				var dz = (UI.screenHeight - 2 * outerspace - 2 * innerspace - tabBarHeight - devToolsHeight) / 3;
+				dim = Math.Min(dx, dz);
+				var halfdim = dim / 2;
 
-			for (var i = 0; i < 7; i++)
+				// ---#3#-#2#---
+				// -#4#-#0#-#1#-
+				// ---#5#-#6#---
+
+				return new Vector2[][] {
+					new [] { // #2
+						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // c
+						new Vector2(midX - halfdim - innerspace - dim, topSpace + dim + innerspace), // r
+					},
+					new [] { // #3
+						new Vector2(midX - halfdim - innerspace - dim, topSpace + dim + innerspace), // l
+						new Vector2(midX - halfdim, topSpace + dim + innerspace), //c
+						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
+					},
+					new [] { // #4
+						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
+						new Vector2(midX + halfspace, topSpace + 0), // tr
+						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
+						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
+					},
+					new [] { // #5
+						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
+						new Vector2(midX + halfspace, topSpace + 0), // tr
+						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
+						new Vector2(midX - halfspace - dim, topSpace + dim + innerspace + dim + innerspace), // bl
+						new Vector2(midX + halfspace, topSpace + dim + innerspace + dim + innerspace), // br
+					},
+					new [] { // #6
+						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
+						new Vector2(midX + halfspace, topSpace + 0), // tr
+						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
+						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
+						new Vector2(midX - halfspace - dim, topSpace + dim + innerspace + dim + innerspace), // bl
+						new Vector2(midX + halfspace, topSpace + dim + innerspace + dim + innerspace), // br
+					},
+					new [] { // #7
+						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
+						new Vector2(midX + halfspace, topSpace + 0), // tr
+						new Vector2(midX - halfdim - innerspace - dim, topSpace + dim + innerspace), // l
+						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
+						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
+						new Vector2(midX - halfspace - dim, topSpace + dim + innerspace + dim + innerspace), // bl
+						new Vector2(midX + halfspace, topSpace + dim + innerspace + dim + innerspace), // br
+					}
+				}[n];
+			}
+
+			var positions = Positions(GameController.tileCount - 2, out var size);
+			for (var i = 0; i < GameController.tileCount; i++)
 			{
-				var mapRect = new Rect(topLeft + offsets[i], new Vector2(dim, dim)); ;
+				var mapRect = new Rect(positions[i], new Vector2(size, size));
 				minimaps[i]?.Draw(mapRect);
 			}
 		}

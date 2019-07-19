@@ -8,15 +8,21 @@ using UnityEngine;
 using Verse;
 using Verse.Profile;
 
+// NOTES
+//
+// IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
+
 namespace RimBattle
 {
 	static class Tools
 	{
 		// reload new colonists
 		//
-		public static void RecreateNewColonists()
+		public static void RecreateNewColonists(bool clear)
 		{
 			Find.GameInitData.startingAndOptionalPawns.Clear();
+			if (clear)
+				return;
 
 			var count = Math.Max(1, Find.Scenario.AllParts
 				.OfType<ScenPart_ConfigPage_ConfigureStartingPawns>()
@@ -27,21 +33,16 @@ namespace RimBattle
 				Find.GameInitData.startingAndOptionalPawns.Add(StartingPawnUtility.NewGeneratedStartingPawn());
 		}
 
-		// create all settlements
+		// create a settlement
 		//
-		public static IEnumerable<Settlement> CreateSettlements()
+		public static Settlement CreateSettlement(int tile)
 		{
-			var tiles = Refs.controller.tiles;
-			for (var i = 0; i < tiles.Count(); i++)
-			{
-				var tile = tiles[i];
-				var settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
-				settlement.SetFaction(Find.GameInitData.playerFaction);
-				settlement.Tile = tile;
-				settlement.Name = NameGenerator.GenerateName(Faction.OfPlayer.def.settlementNameMaker);
-				Find.WorldObjects.Add(settlement);
-				yield return settlement;
-			}
+			var settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
+			settlement.SetFaction(Find.GameInitData.playerFaction);
+			settlement.Tile = tile;
+			settlement.Name = NameGenerator.GenerateName(Faction.OfPlayer.def.settlementNameMaker);
+			Find.WorldObjects.Add(settlement);
+			return settlement;
 		}
 
 		// shameless copy of Game.InitNewGame()
@@ -82,12 +83,20 @@ namespace RimBattle
 
 				game.tickManager.gameStartAbsTick = GenTicks.ConfiguredTicksAbsAtGameStart;
 
-				foreach (var settlement in CreateSettlements())
+				var allTiles = Refs.controller.tiles;
+				var allTileIndices = TeamTiles(GameController.tileCount, GameController.tileCount);
+				var teamTileIndices = TeamTiles(GameController.tileCount, GameController.teamCount);
+				for (var i = 0; i < allTiles.Count; i++)
 				{
-					RecreateNewColonists();
+					var tile = allTiles[i];
+					var tileIndex = allTileIndices[i];
+					var hasTeam = teamTileIndices.Contains(tileIndex);
+					RecreateNewColonists(hasTeam == false);
+					var settlement = CreateSettlement(tile);
 					var map = MapGenerator.GenerateMap(mapSize, settlement, settlement.MapGeneratorDef, settlement.ExtraGenStepDefs, null);
 					PawnUtility.GiveAllStartingPlayerPawnsThought(ThoughtDefOf.NewColonyOptimism);
-					Team.CreateWithColonistsOnMap(map);
+					if (hasTeam)
+						Team.CreateWithColonistsOnMap(map);
 					Refs.controller.CreateMapPart(map);
 				}
 
@@ -119,6 +128,13 @@ namespace RimBattle
 			{
 				DeepProfiler.End();
 			}
+		}
+
+		internal static Texture2D[] GetTextures(string path, int idx1, int idx2)
+		{
+			return Enumerable.Range(idx1, idx2)
+				.Select(i => ContentFinder<Texture2D>.Get(path.Replace("#", $"{i}")))
+				.ToArray();
 		}
 
 		public static void TweakStat(StatDef stat, ref float result)
@@ -160,7 +176,23 @@ namespace RimBattle
 			var max = (center + 1 >= tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_values.Count : tileIDToNeighbors_offsets[center + 1];
 			for (var i = tileIDToNeighbors_offsets[center]; i < max; i++)
 				tiles.Add(tileIDToNeighbors_values[i]);
-			return tiles.ToArray();
+			return GameController.TilePattern
+				.Where(idx => idx < tiles.Count)
+				.Select(idx => tiles[idx]).ToArray();
+		}
+
+		public static int[] TeamTiles(int tileCount, int teamCount, bool normalised = false)
+		{
+			var list = Refs.teamTiles[tileCount - 2][teamCount - 2];
+			if (normalised)
+			{
+				var copy = (int[])list.Clone();
+				var sorted = list.ToList();
+				sorted.Sort();
+				for (var i = 0; i < list.Length; i++)
+					list[copy.FirstIndexOf(el => el == sorted[i])] = i;
+			}
+			return list;
 		}
 
 		// validates several tiles at once
@@ -185,7 +217,7 @@ namespace RimBattle
 		public static int GetAdjactedTile(int baseTile, int n)
 		{
 			if (baseTile == -1) return -1;
-			var adjactedTiles = Tools.CalculateTiles(baseTile);
+			var adjactedTiles = CalculateTiles(baseTile);
 			if (n < 0 || n >= adjactedTiles.Length) return -1;
 			return adjactedTiles[n];
 		}
@@ -234,6 +266,12 @@ namespace RimBattle
 			if (verb != null && verb.verbProps.IsMeleeAttack == false)
 				return Math.Min(90f, verb.verbProps.range);
 			return Refs.defaultVisibleRange;
+		}
+
+		public static string TranslateHoursToText(float hours)
+		{
+			var ticks = (int)(GenDate.TicksPerHour * hours);
+			return ticks.ToStringTicksToPeriodVerbose(false, true);
 		}
 
 		private static IEnumerable<IntVec3> GetCircleVectors(float radius)
