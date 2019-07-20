@@ -88,7 +88,7 @@ namespace RimBattle
 			return false;
 		}
 
-		public bool IsVisible(Pawn pawn)
+		public bool IsVisible(Thing pawn)
 		{
 			return IsVisible(pawn.Map, pawn.Position);
 		}

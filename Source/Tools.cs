@@ -133,10 +133,21 @@ namespace RimBattle
 
 		// read multiple textures at once
 		//
-		internal static Texture2D[] GetTextures(string path, int idx1, int idx2)
+		public static Texture2D[] GetTextures(string path, int idx1, int idx2)
 		{
 			return Enumerable.Range(idx1, idx2)
 				.Select(i => ContentFinder<Texture2D>.Get(path.Replace("#", $"{i}")))
+				.ToArray();
+		}
+
+		// read multiple materials at once
+		//
+		public static Material[] GetMaterials(string path, int idx1, int idx2, Shader shader)
+		{
+			return Enumerable.Range(idx1, idx2)
+				.Select(i =>
+					MaterialPool.MatFrom(path.Replace("#", $"{i}"), shader)
+				)
 				.ToArray();
 		}
 
@@ -269,6 +280,43 @@ namespace RimBattle
 			return squared ? range * range : range;
 		}
 
+		// test if an object is selectable (vanilla only allows Thing and Zone)
+		//
+		public static bool CanSelect(object obj)
+		{
+			if (obj == null)
+				return false;
+
+			var controller = Refs.controller;
+			if (obj is Zone zone)
+				return zone.cells.Any(cell => controller.IsVisible(zone.Map, cell));
+
+			var thing = obj as Thing;
+			if (thing == null)
+				return true;
+
+			if (!thing.def.selectable)
+				return false;
+
+			if (thing.def.size.x != 1 || thing.def.size.z != 1)
+			{
+				var map = thing.Map;
+				return thing.OccupiedRect().Cells.Any(cell => controller.IsVisible(map, cell));
+			}
+
+			if (controller.IsVisible(thing) == false)
+				return false;
+
+			var pawn = thing as Pawn;
+			if (pawn == null)
+				return true;
+
+			if (pawn.Faction != Faction.OfPlayer)
+				return true;
+
+			return controller.IsInWeaponRange(pawn);
+		}
+
 		// hours to human readable text
 		//
 		public static string TranslateHoursToText(float hours)
@@ -297,6 +345,15 @@ namespace RimBattle
 				Refs.circleCache[radius] = cells;
 			}
 			return cells;
+		}
+
+		// draw mesh
+		//
+		public static void DrawMesh(Mesh mesh, Material mat, float matSizeX, float matSizeZ, Vector3 pos)
+		{
+			var matrix = default(Matrix4x4);
+			matrix.SetTRS(pos, Quaternion.identity, new Vector3(matSizeX, 1f, matSizeZ));
+			Graphics.DrawMesh(mesh, matrix, mat, 0);
 		}
 
 		// execute a callback for each cell in a circle

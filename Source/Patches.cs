@@ -2,6 +2,7 @@
 using RimWorld;
 using RimWorld.Planet;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -19,6 +20,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
 	static class Page_CreateWorldParams_PreOpen_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix(ref float ___planetCoverage)
 		{
 			___planetCoverage = 0.05f;
@@ -31,6 +33,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(World.FinalizeInit))]
 	static class World_FinalizeInit_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix(World __instance)
 		{
 			Refs.controller = __instance.GetComponent<GameController>();
@@ -43,6 +46,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(UIRoot.UIRootOnGUI))]
 	static class UIRoot_UIRootOnGUI_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
 			Refs.controller?.OnGUI();
@@ -55,6 +59,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(ColonistBar.ColonistBarOnGUI))]
 	static class ColonistBar_ColonistBarOnGUI_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
 			return (Refs.controller?.battleOverview?.showing ?? true) == false;
@@ -80,6 +85,7 @@ namespace RimBattle
 				.ToList();
 		}
 
+		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
 		{
 			var m_get_FreeColonists = AccessTools.Property(typeof(MapPawns), "FreeColonists").GetGetMethod();
@@ -110,6 +116,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(MapInterface.Notify_SwitchedMap))]
 	static class MapInterface_Notify_SwitchedMap_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
 			Find.ColonistBar.MarkColonistsDirty();
@@ -120,34 +127,13 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(GenMapUI))]
 	[HarmonyPatch("DrawPawnLabel")]
-	//[HarmonyPatch(new [] { typeof(Pawn), typeof(Vector2), typeof(float), typeof(float), typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) })]
 	[HarmonyPatch(new[] { typeof(Pawn), typeof(Rect), typeof(float), typeof(float), typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) })]
 	static class GenMapUI_DrawPawnLabel_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
 			return Refs.controller.BattleOverview.showing == false;
-		}
-
-		static void Postfix(Pawn pawn, Rect bgRect)
-		{
-			var controller = Refs.controller;
-			if (controller.BattleOverview.showing)
-			{
-				var team = controller.TeamForPawn(pawn);
-				if (team == null) return;
-
-				var m = bgRect.center.x;
-				bgRect.xMin = m - 7;
-				bgRect.xMax = m + 7;
-				bgRect.yMin += 14;
-				bgRect.height = 14;
-
-				GUI.DrawTexture(bgRect, Refs.TeamIdOuter);
-				GUI.color = team.color;
-				GUI.DrawTexture(bgRect.ContractedBy(1), Refs.TeamIdInner);
-				GUI.color = Color.white;
-			}
 		}
 	}
 
@@ -157,6 +143,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(DefGenerator.GenerateImpliedDefs_PostResolve))]
 	static class DefGenerator_GenerateImpliedDefs_PostResolve_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
 			AccessTools.GetDeclaredFields(typeof(Keys))
@@ -175,6 +162,7 @@ namespace RimBattle
 	[HarmonyPatch("CanDoNext")]
 	static class Page_SelectStartingSite_CanDoNext_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix(ref bool __result)
 		{
 			if (__result)
@@ -198,6 +186,7 @@ namespace RimBattle
 	[HarmonyPatch("Tile", MethodType.Getter)]
 	static class WorldLayer_MouseTile_Tile_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix(WorldLayer_MouseTile __instance, ref int __result)
 		{
 			if (__instance.GetType().Namespace == "RimBattle")
@@ -214,6 +203,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Prefs.MaxNumberOfPlayerSettlements), MethodType.Getter)]
 	static class Prefs_MaxNumberOfPlayerSettlements_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix(ref int __result)
 		{
 			__result = 7; // maximum
@@ -227,6 +217,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(ScenPart_PlayerPawnsArriveMethod.GenerateIntoMap))]
 	static class ScenPart_PlayerPawnsArriveMethod_GenerateIntoMap_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
 			return Find.GameInitData.startingAndOptionalPawns.Any();
@@ -239,6 +230,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Page_CreateWorldParams.DoWindowContents))]
 	static class Page_CreateWorldParams_DoWindowContents_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix(Rect rect)
 		{
 			ConfigGUI.DoWindowContents(rect);
@@ -251,6 +243,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(ScenPart_ConfigPage.GetConfigPages))]
 	static class ScenPart_ConfigPage_GetConfigPages_Patch
 	{
+		[HarmonyPriority(10000)]
 		static IEnumerable<Page> Postfix(IEnumerable<Page> pages)
 		{
 			return pages.Where(page => page.GetType() != typeof(Page_ConfigureStartingPawns));
@@ -263,6 +256,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Game.InitNewGame))]
 	static class Game_InitNewGame_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
 			Tools.InitNewGame();
@@ -276,6 +270,7 @@ namespace RimBattle
 	[HarmonyPatch(MethodType.Constructor)]
 	static class MainButtonsRoot_Constructor_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Postfix(List<MainButtonDef> ___allButtonsInOrder)
 		{
 			MainButtonDefOf.World.hotKey = null;
@@ -294,6 +289,7 @@ namespace RimBattle
 			yield return SymbolExtensions.GetMethodInfo(() => StatExtension.GetStatValueAbstract(null, StatDefOf.Mass, null));
 		}
 
+		[HarmonyPriority(10000)]
 		static void Postfix(ref float __result, StatDef stat)
 		{
 			Tools.TweakStat(stat, ref __result);
@@ -306,6 +302,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(GenConstruct.CanConstruct))]
 	static class GenConstruct_CanConstruct_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Prefix(ref bool checkConstructionSkill)
 		{
 			checkConstructionSkill = false;
@@ -323,6 +320,7 @@ namespace RimBattle
 			yield return SymbolExtensions.GetMethodInfo(() => new SkillRequirement().PawnSatisfies(null));
 		}
 
+		[HarmonyPriority(10000)]
 		static bool Prefix(ref bool __result)
 		{
 			__result = true;
@@ -336,6 +334,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Thing.Position), MethodType.Setter)]
 	static class Thing_Position_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Prefix(Thing __instance, IntVec3 value)
 		{
 			var pawn = __instance as Pawn;
@@ -360,27 +359,143 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(Vector3), typeof(float), typeof(bool), typeof(Rot4), typeof(Rot4), typeof(RotDrawMode), typeof(bool), typeof(bool) })]
 	static class PawnRenderer_RenderPawnInternal_Patch
 	{
-		static bool Prefix(Vector3 rootLoc, Pawn ___pawn)
+		[HarmonyPriority(10000)]
+		static bool Prefix(Vector3 rootLoc, Pawn ___pawn, out bool __state)
 		{
+			__state = true;
 			if (___pawn.Faction != Faction.OfPlayer) return true;
 			var map = ___pawn.Map;
 			if (map == null) return true;
-			return Refs.controller.IsInWeaponRange(___pawn);
+			__state = Refs.controller.IsInWeaponRange(___pawn);
+			return __state;
+		}
+
+		[HarmonyPriority(10000)]
+		static void Postfix(Pawn ___pawn, bool __state)
+		{
+			if (__state == false)
+				return;
+
+			var team = Refs.controller.TeamForPawn(___pawn);
+			if (team == null) return;
+
+			var pos = ___pawn.DrawPos + new Vector3(0.3f, 0.2f, -0.3f);
+			var matrix = default(Matrix4x4);
+			matrix.SetTRS(pos, Quaternion.identity, new Vector3(0.5f, 1f, 0.5f));
+			Graphics.DrawMesh(MeshPool.plane10, matrix, Refs.BadgeShadow, 0);
+			Graphics.DrawMesh(MeshPool.plane10, matrix, Refs.Badges[team.id], 0);
 		}
 	}
 
-	/*[HarmonyPatch(typeof(PawnNameColorUtility))]
-	[HarmonyPatch(nameof(PawnNameColorUtility.PawnNameColorOf))]
-	static class PawnNameColorUtility_PawnNameColorOf_Patch
+	// draw pawn shadows only if close by
+	// 
+	[HarmonyPatch(typeof(Graphic))]
+	[HarmonyPatch("Draw")]
+	static class Graphic_Draw_Patch
 	{
-		static bool Prefix(Pawn pawn, ref Color __result)
+		[HarmonyPriority(10000)]
+		static bool Prefix(Thing thing)
 		{
-			var team = Refs.controller.TeamForPawn(pawn);
-			if (team == null) return true;
-			__result = team.color;
-			return false;
+			var pawn = thing as Pawn;
+			if (pawn == null) return true;
+			if (pawn.Faction != Faction.OfPlayer) return true;
+			var map = pawn.Map;
+			if (map == null) return true;
+			return Refs.controller.IsInWeaponRange(pawn);
 		}
-	}*/
+	}
+
+	// only visible and in range objects are selectable
+	//
+	[HarmonyPatch(typeof(Selector))]
+	[HarmonyPatch(nameof(Selector.Select))]
+	static class Selector_Select_Patch
+	{
+		[HarmonyPriority(10000)]
+		static bool Prefix(object obj, bool forceDesignatorDeselect)
+		{
+			// Designator_ZoneAdd.set_SelectedZone does some funky stuff 
+			if (forceDesignatorDeselect == false) return true;
+
+			return Tools.CanSelect(obj);
+		}
+	}
+
+	// disallow designation in cells that are not visible
+	//
+	[HarmonyPatch]
+	static class Designator_Cell_Patch
+	{
+		static bool IsVisible(Map map, IntVec3 loc)
+		{
+			return Refs.controller.IsVisible(map, loc);
+		}
+
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			var myAssembly = typeof(Designator_Cell_Patch).Assembly;
+			return GenTypes.AllTypes
+				.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(Designator)))
+				.Where(type => type.Assembly != myAssembly && type != typeof(Designator_EmptySpace))
+				.Select(type => type.GetMethod(nameof(Designator.CanDesignateCell)) as MethodBase);
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(MethodBase method, Instructions instructions, ILGenerator generator)
+		{
+			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod();
+			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null, IntVec3.Zero));
+			var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
+			yield return new CodeInstruction(OpCodes.Ldarg_0);
+			yield return new CodeInstruction(OpCodes.Call, m_get_Map);
+			yield return new CodeInstruction(OpCodes.Ldarg_1);
+			yield return new CodeInstruction(OpCodes.Call, m_IsVisible);
+			var label = generator.DefineLabel();
+			yield return new CodeInstruction(OpCodes.Brtrue, label);
+			yield return new CodeInstruction(OpCodes.Call, m_get_WasRejected);
+			yield return new CodeInstruction(OpCodes.Ret);
+			yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
+			foreach (var instruction in instructions)
+				yield return instruction;
+		}
+	}
+
+	// disallow designating things that are not visible
+	//
+	[HarmonyPatch]
+	static class Designator_Thing_Patch
+	{
+		static bool IsVisible(Thing thing)
+		{
+			return Refs.controller.IsVisible(thing);
+		}
+
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			var myAssembly = typeof(Designator_Thing_Patch).Assembly;
+			return GenTypes.AllTypes
+				.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(Designator)))
+				.Where(type => type.Assembly != myAssembly && type != typeof(Designator_EmptySpace))
+				.Select(type => type.GetMethod(nameof(Designator.CanDesignateThing)) as MethodBase);
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(MethodBase method, Instructions instructions, ILGenerator generator)
+		{
+			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod();
+			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null));
+			var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
+			yield return new CodeInstruction(OpCodes.Ldarg_1);
+			yield return new CodeInstruction(OpCodes.Call, m_IsVisible);
+			var label = generator.DefineLabel();
+			yield return new CodeInstruction(OpCodes.Brtrue, label);
+			yield return new CodeInstruction(OpCodes.Call, m_get_WasRejected);
+			yield return new CodeInstruction(OpCodes.Ret);
+			yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
+			foreach (var instruction in instructions)
+				yield return instruction;
+		}
+	}
 
 	// show only our colonists in colonistbar
 	//
@@ -388,6 +503,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(PlayerPawnsDisplayOrderUtility.Sort))]
 	static class PlayerPawnsDisplayOrderUtility_Sort_Patch
 	{
+		[HarmonyPriority(10000)]
 		static void Prefix(List<Pawn> pawns)
 		{
 			var controller = Refs.controller;
@@ -403,6 +519,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(PawnUIOverlay.DrawPawnGUIOverlay))]
 	static class PawnUIOverlay_DrawPawnGUIOverlay_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn ___pawn)
 		{
 			var controller = Refs.controller;
@@ -425,7 +542,8 @@ namespace RimBattle
 			return grid.IsFogged(c);
 		}
 
-		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(Instructions instructions)
 		{
 			return Transpilers.MethodReplacer(instructions,
 				SymbolExtensions.GetMethodInfo(() => new FogGrid(null).IsFogged(IntVec3.Zero)),
@@ -441,6 +559,7 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool) })]
 	static class GenSpawn_Spawn_Patch
 	{
+		[HarmonyPriority(10000)]
 		static bool Prefix(Thing newThing, IntVec3 loc, Map map, ref Thing __result)
 		{
 			if (newThing is Mote && loc.InBounds(map))
@@ -460,6 +579,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(SectionLayer_FogOfWar.Regenerate))]
 	static class SectionLayer_FogOfWar_Regenerate__Patch
 	{
+		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
 		{
 			instructions.GetHashCode(); // make compiler happy
@@ -476,6 +596,7 @@ namespace RimBattle
 	[HarmonyPatch(nameof(OverlayDrawer.DrawAllOverlays))]
 	static class OverlayDrawer_DrawAllOverlays_Patch
 	{
+		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
 			Func<Thing, bool> IsVisible = (thing) => Refs.controller.IsVisible(thing.Map, thing.Position);
@@ -498,6 +619,21 @@ namespace RimBattle
 			}
 		}
 	}
+
+	// -- maybe used later ----------------------------------------------------------
+
+	/*[HarmonyPatch(typeof(PawnNameColorUtility))]
+	[HarmonyPatch(nameof(PawnNameColorUtility.PawnNameColorOf))]
+	static class PawnNameColorUtility_PawnNameColorOf_Patch
+	{
+		static bool Prefix(Pawn pawn, ref Color __result)
+		{
+			var team = Refs.controller.TeamForPawn(pawn);
+			if (team == null) return true;
+			__result = team.color;
+			return false;
+		}
+	}*/
 
 	// we cannot change IsFogged because the fog is local to each player
 	// if we do more than cosmetic stuff it will desync

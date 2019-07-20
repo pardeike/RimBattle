@@ -32,7 +32,7 @@ namespace RimBattle
 		public static void CreateWithColonistsOnMap(Map map)
 		{
 			var existingTeams = Refs.controller.teams;
-			var team = new Team(existingTeams.Count + 1);
+			var team = new Team(existingTeams.Count);
 			Find.GameInitData.startingAndOptionalPawns.Do(pawn => team.Add(pawn));
 			existingTeams.Add(team);
 		}

@@ -94,13 +94,12 @@ namespace RimBattle
 		public static readonly Color mountainColor = new ColorInt(58, 63, 63).ToColor;
 		public static readonly Color animalColor = new ColorInt(128, 128, 128).ToColor;
 
-		public static readonly Material UndiscovereddMat = MaterialPool.MatFrom("Undiscovered", ShaderDatabase.MoteGlow);
 		public static readonly Material MouseTileError = MaterialPool.MatFrom("MouseTileError", ShaderDatabase.WorldOverlayAdditive, 3560);
 		public static readonly Material SelectedTileError = MaterialPool.MatFrom("SelectedTileError", ShaderDatabase.WorldOverlayAdditive, 3560);
+		public static readonly Material[] Badges = Tools.GetMaterials("Badges/Badge#", 0, 6, ShaderDatabase.MetaOverlay);
+		public static readonly Material BadgeShadow = MaterialPool.MatFrom("Badges/Shadow", ShaderDatabase.MetaOverlay);
 		public static readonly Texture2D[] Configs = Tools.GetTextures("Tiles/Config#", 1, 7);
 		public static readonly Texture2D[] Teams = Tools.GetTextures("Tiles/Team#", 1, 7);
-		public static readonly Texture2D TeamIdInner = ContentFinder<Texture2D>.Get("TeamIdInner");
-		public static readonly Texture2D TeamIdOuter = ContentFinder<Texture2D>.Get("TeamIdOuter");
 
 		public static readonly MainButtonDef Battle = new MainButtonDef()
 		{
