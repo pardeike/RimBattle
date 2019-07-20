@@ -368,112 +368,27 @@ namespace RimBattle
 			}
 		}
 
-		// fog regeneration with extra visibility injected
-		// TODO: make this work with a transpiler
+		// add a form caravan gizmo if any caravanable pawn is selected
 		//
-		public static void Regenerate(SectionLayer layer)
+		public static void AddFormCaravanGizmo(List<Gizmo> list)
 		{
-			var section = Refs.section(layer);
-			var map = section.map;
-
-			var subMesh = layer.GetSubMesh(MatBases.FogOfWar);
-			if (subMesh.mesh.vertexCount == 0)
-				SectionLayerGeometryMaker_Solid.MakeBaseGeometry(section, subMesh, AltitudeLayer.FogOfWar);
-			subMesh.Clear(MeshParts.Colors);
-
-			var fogGrid = map.fogGrid.fogGrid;
-			var visibleGrid = Refs.controller.mapParts[map].visibility.visible;
-			var cellIndices = map.cellIndices;
-
-			bool FoggedOrNotVisible(int x, int y)
+			if (Find.Selector.SelectedObjects.All(obj =>
 			{
-				var n = cellIndices.CellToIndex(x, y);
-				return visibleGrid[n] == false || fogGrid[n];
-			}
+				var pawn = obj as Pawn;
+				if (pawn == null) return false;
+				if (pawn.IsColonistPlayerControlled) return true;
+				return pawn.RaceProps.Animal && pawn.Faction == Faction.OfPlayer;
+			}) == false) return;
 
-			var cellRect = section.CellRect;
-			var num = map.Size.z - 1;
-			var num2 = map.Size.x - 1;
-			var flag = false;
-			var vertsCovered = new bool[9];
-
-			for (var i = cellRect.minX; i <= cellRect.maxX; i++)
+			list.Add(new Command_Action
 			{
-				for (var j = cellRect.minZ; j <= cellRect.maxZ; j++)
-				{
-					if (FoggedOrNotVisible(i, j))
-					{
-						for (var k = 0; k < 9; k++)
-							vertsCovered[k] = true;
-					}
-					else
-					{
-						for (var k = 0; k < 9; k++)
-							vertsCovered[k] = false;
-
-						if (j < num && FoggedOrNotVisible(i, j + 1))
-						{
-							vertsCovered[2] = true;
-							vertsCovered[3] = true;
-							vertsCovered[4] = true;
-						}
-
-						if (j > 0 && FoggedOrNotVisible(i, j - 1))
-						{
-							vertsCovered[6] = true;
-							vertsCovered[7] = true;
-							vertsCovered[0] = true;
-						}
-
-						if (i < num2 && FoggedOrNotVisible(i + 1, j))
-						{
-							vertsCovered[4] = true;
-							vertsCovered[5] = true;
-							vertsCovered[6] = true;
-						}
-
-						if (i > 0 && FoggedOrNotVisible(i - 1, j))
-						{
-							vertsCovered[0] = true;
-							vertsCovered[1] = true;
-							vertsCovered[2] = true;
-						}
-
-						if (j > 0 && i > 0 && FoggedOrNotVisible(i - 1, j - 1))
-							vertsCovered[0] = true;
-
-						if (j < num && i > 0 && FoggedOrNotVisible(i - 1, j + 1))
-							vertsCovered[2] = true;
-
-						if (j < num && i < num2 && FoggedOrNotVisible(i + 1, j + 1))
-							vertsCovered[4] = true;
-
-						if (j > 0 && i < num2 && FoggedOrNotVisible(i + 1, j - 1))
-							vertsCovered[6] = true;
-					}
-
-					for (var m = 0; m < 9; m++)
-					{
-						byte a;
-						if (vertsCovered[m])
-						{
-							a = byte.MaxValue;
-							flag = true;
-						}
-						else
-							a = 0;
-
-						subMesh.colors.Add(new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, a));
-					}
-				}
-			}
-			if (flag)
-			{
-				subMesh.disabled = false;
-				subMesh.FinalizeMesh(MeshParts.Colors);
-			}
-			else
-				subMesh.disabled = true;
+				defaultLabel = "CommandFormCaravan".Translate(),
+				defaultDesc = "CommandFormCaravanDesc".Translate(),
+				icon = FormCaravanComp.FormCaravanCommand,
+				hotKey = KeyBindingDefOf.Misc2,
+				tutorTag = "FormCaravan",
+				action = delegate () { Find.WindowStack.Add(new Dialog_FormCaravan(Find.CurrentMap, false, null, false)); }
+			});
 		}
 	}
 }

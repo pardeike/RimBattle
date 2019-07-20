@@ -599,7 +599,7 @@ namespace RimBattle
 		static Instructions Transpiler(Instructions instructions)
 		{
 			instructions.GetHashCode(); // make compiler happy
-			var replacement = SymbolExtensions.GetMethodInfo(() => Tools.Regenerate(null));
+			var replacement = SymbolExtensions.GetMethodInfo(() => CopiedMethods.RegenerateFog(null));
 			yield return new CodeInstruction(OpCodes.Ldarg_0);
 			yield return new CodeInstruction(OpCodes.Call, replacement);
 			yield return new CodeInstruction(OpCodes.Ret);
@@ -636,6 +636,38 @@ namespace RimBattle
 		}
 	}
 
+	// hide zones if not discovered
+	//
+	[HarmonyPatch]
+	static class SectionLayer_Zones_Regenerate_Patch
+	{
+		// jeez, why is this class internal
+		static MethodBase TargetMethod()
+		{
+			var type = AccessTools.TypeByName("SectionLayer_Zones");
+			return AccessTools.Method(type, "Regenerate");
+		}
+
+		static bool Prefix(object __instance)
+		{
+			var myBase = __instance as SectionLayer;
+			if (myBase == null) return true;
+			var section = Refs.section(myBase);
+			CopiedMethods.RegenerateZone(myBase, section);
+			return false;
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(Instructions instructions)
+		{
+			instructions.GetHashCode(); // make compiler happy
+			var replacement = SymbolExtensions.GetMethodInfo(() => CopiedMethods.RegenerateFog(null));
+			yield return new CodeInstruction(OpCodes.Ldarg_0);
+			yield return new CodeInstruction(OpCodes.Call, replacement);
+			yield return new CodeInstruction(OpCodes.Ret);
+		}
+	}
+
 	// add form caravan button if colonists or colony animals are selected
 	//
 	[HarmonyPatch(typeof(InspectGizmoGrid))]
@@ -645,24 +677,7 @@ namespace RimBattle
 		static void ClearAndAddOurGizmo(List<Gizmo> list)
 		{
 			list.Clear();
-
-			if (Find.Selector.SelectedObjects.All(obj =>
-			{
-				var pawn = obj as Pawn;
-				if (pawn == null) return false;
-				if (pawn.IsColonistPlayerControlled) return true;
-				return pawn.RaceProps.Animal && pawn.Faction == Faction.OfPlayer;
-			}) == false) return;
-
-			list.Add(new Command_Action
-			{
-				defaultLabel = "CommandFormCaravan".Translate(),
-				defaultDesc = "CommandFormCaravanDesc".Translate(),
-				icon = FormCaravanComp.FormCaravanCommand,
-				hotKey = KeyBindingDefOf.Misc2,
-				tutorTag = "FormCaravan",
-				action = delegate () { Find.WindowStack.Add(new Dialog_FormCaravan(Find.CurrentMap, false, null, false)); }
-			});
+			Tools.AddFormCaravanGizmo(list);
 		}
 
 		[HarmonyPriority(10000)]
