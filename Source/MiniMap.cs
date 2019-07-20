@@ -1,7 +1,6 @@
 ﻿using Harmony;
 using RimWorld;
-using RimWorld.Planet;
-using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -40,11 +39,8 @@ namespace RimBattle
 
 				GUI.color = Color.black;
 				Widgets.DrawBox(rect, 2);
-				if (Find.CurrentMap == map || Mouse.IsOver(rect))
-				{
-					GUI.color = Mouse.IsOver(rect) ? Color.yellow : Color.white;
-					Widgets.DrawBox(rect, 1);
-				}
+				GUI.color = Find.CurrentMap == map ? Color.yellow : Color.white;
+				Widgets.DrawBox(rect, 1);
 
 				rect = rect.ContractedBy(3);
 
@@ -59,45 +55,52 @@ namespace RimBattle
 				return new Rect(rect.position + offset - markerSize / 2, markerSize);
 			}
 
-			map.mapPawns.AllPawns
-				.Where(pawn => pawn.RaceProps.Humanlike && map.fogGrid.IsFogged(pawn.Position) == false)
-				.Do(pawn =>
+			var fogGrid = map.fogGrid;
+			var visibleGrid = Refs.controller.mapParts[map].visibility;
+			map.mapPawns.AllPawns.Do(pawn =>
+			{
+				if (pawn.RaceProps.Humanlike == false)
+					return;
+
+				var cellIndex = map.cellIndices.CellToIndex(pawn.Position);
+				if (fogGrid.IsFogged(cellIndex) || visibleGrid.IsVisible(cellIndex) == false)
+					return;
+
+				var r = Marker(pawn);
+				var hostile = pawn.HostileTo(Faction.OfPlayer);
+				var colonist = pawn.IsColonist;
+
+				MouseoverSounds.DoRegion(r, SoundDefOf.Mouseover_Standard);
+
+				if (repainting)
 				{
-					var r = Marker(pawn);
-					var hostile = pawn.HostileTo(Faction.OfPlayer);
-					var colonist = pawn.IsColonist;
+					var color = PawnNameColorUtility.PawnNameColorOf(pawn);
+					Widgets.DrawBoxSolid(r, color);
+					if (Find.Selector.IsSelected(pawn))
+					{
+						GUI.color = Color.black;
+						Widgets.DrawBox(r.ContractedBy(-1), 1);
+					}
+				}
 
-					MouseoverSounds.DoRegion(r, SoundDefOf.Mouseover_Standard);
-
+				r = r.ContractedBy(-2);
+				if (Mouse.IsOver(r.ContractedBy(-2)))
+				{
 					if (repainting)
 					{
-						var color = PawnNameColorUtility.PawnNameColorOf(pawn);
-						Widgets.DrawBoxSolid(r, color);
-						if (Find.Selector.IsSelected(pawn))
-						{
-							GUI.color = Color.black;
-							Widgets.DrawBox(r.ContractedBy(-1), 1);
-						}
+						GUI.color = Color.yellow;
+						Widgets.DrawBox(r, 1);
 					}
 
-					r = r.ContractedBy(-2);
-					if (Mouse.IsOver(r.ContractedBy(-2)))
+					if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
 					{
-						if (repainting)
-						{
-							GUI.color = Color.yellow;
-							Widgets.DrawBox(r, 1);
-						}
-
-						if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
-						{
-							Event.current.Use();
-							CameraJumper.TryJumpAndSelect(pawn);
-							Refs.controller.battleOverview.showing = false;
-							return;
-						}
+						Event.current.Use();
+						CameraJumper.TryJumpAndSelect(pawn);
+						Refs.controller.battleOverview.showing = false;
+						return;
 					}
-				});
+				}
+			});
 
 			if (Widgets.ButtonInvisible(rect, true))
 			{
@@ -107,8 +110,17 @@ namespace RimBattle
 			}
 		}
 
-		public void UpdateTexture()
+		public void UpdateTextureFully()
 		{
+			var it = UpdateTexture();
+			while (it.MoveNext()) ;
+		}
+
+		public IEnumerator UpdateTexture()
+		{
+			const int pixelsPerYield = 100;
+			var yieldCounter = 0;
+
 			mapSizeX = map.Size.x;
 			mapSizeZ = map.Size.z;
 
@@ -163,37 +175,18 @@ namespace RimBattle
 				done:
 					var things = map.thingGrid.ThingsListAtFast(idx);
 					for (var i = 0; i < things.Count; i++)
-					{
-						var thing = things[i];
-
-						//if (thing is Pawn pawn)
-						//{
-						//	pawns.Add(pawn);
-						//	break;
-						//}
-
-						if (thing.def.category == ThingCategory.Plant)
+						if (things[i].def.category == ThingCategory.Plant)
 							texture.SetPixel(x, z, Refs.plantColor);
+
+					if (++yieldCounter > pixelsPerYield)
+					{
+						yieldCounter = 0;
+						yield return null;
 					}
 				}
-
-			//foreach (var pawn in pawns)
-			//{
-			//	if (pawn.RaceProps.Humanlike == false)
-			//		texture.SetPixel(pawn.Position.x, pawn.Position.z, Refs.animalColor);
-			//	else
-			//		ColonistDot(pawn);
-			//}
 
 			texture.Apply(true);
 			updated = true;
 		}
-
-		//void ColonistDot(Pawn pawn)
-		//{
-		//	var color = PawnNameColorUtility.PawnNameColorOf(pawn);
-		//	foreach (var cell in GenRadial.RadialCellsAround(pawn.Position, 1f, true))
-		//		texture.SetPixel(cell.x, cell.z, color);
-		//}
 	}
 }

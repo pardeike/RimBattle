@@ -102,7 +102,8 @@ namespace RimBattle
 
 				game.FinalizeInit();
 
-				Current.Game.CurrentMap = Refs.controller.MapForTile(0); // TODO: change to random
+				Current.Game.CurrentMap = Refs.controller.MapForTile(0);
+
 				Find.CameraDriver.JumpToCurrentMapLoc(MapGenerator.PlayerStartSpot);
 				Find.CameraDriver.ResetSize();
 				Find.Scenario.PostGameStart();
@@ -130,6 +131,8 @@ namespace RimBattle
 			}
 		}
 
+		// read multiple textures at once
+		//
 		internal static Texture2D[] GetTextures(string path, int idx1, int idx2)
 		{
 			return Enumerable.Range(idx1, idx2)
@@ -137,6 +140,8 @@ namespace RimBattle
 				.ToArray();
 		}
 
+		// general stats manipulation
+		//
 		public static void TweakStat(StatDef stat, ref float result)
 		{
 			// much faster
@@ -181,18 +186,11 @@ namespace RimBattle
 				.Select(idx => tiles[idx]).ToArray();
 		}
 
-		public static int[] TeamTiles(int tileCount, int teamCount, bool normalised = false)
+		// returns a specific constellation form number of maps and teams
+		//
+		public static int[] TeamTiles(int tileCount, int teamCount)
 		{
-			var list = Refs.teamTiles[tileCount - 2][teamCount - 2];
-			if (normalised)
-			{
-				var copy = (int[])list.Clone();
-				var sorted = list.ToList();
-				sorted.Sort();
-				for (var i = 0; i < list.Length; i++)
-					list[copy.FirstIndexOf(el => el == sorted[i])] = i;
-			}
-			return list;
+			return Refs.teamTiles[tileCount - 1][teamCount - 2];
 		}
 
 		// validates several tiles at once
@@ -260,20 +258,27 @@ namespace RimBattle
 
 		// get weapon range or default for no weapon
 		//
-		public static float WeaponRange(this Pawn pawn)
+		public static float WeaponRange(this Pawn pawn, bool squared = false)
 		{
 			var verb = pawn.equipment?.PrimaryEq?.PrimaryVerb;
+			float range;
 			if (verb != null && verb.verbProps.IsMeleeAttack == false)
-				return Math.Min(90f, verb.verbProps.range);
-			return Refs.defaultVisibleRange;
+				range = Math.Min(90f, verb.verbProps.range);
+			else
+				range = Refs.defaultVisibleRange;
+			return squared ? range * range : range;
 		}
 
+		// hours to human readable text
+		//
 		public static string TranslateHoursToText(float hours)
 		{
 			var ticks = (int)(GenDate.TicksPerHour * hours);
 			return ticks.ToStringTicksToPeriodVerbose(false, true);
 		}
 
+		// a cached generator for all cells in a given circle
+		//
 		private static IEnumerable<IntVec3> GetCircleVectors(float radius)
 		{
 			if (Refs.circleCache.TryGetValue(radius, out var cells) == false)
@@ -311,7 +316,7 @@ namespace RimBattle
 		//
 		public static void Regenerate(SectionLayer layer)
 		{
-			var section = Refs.sectionRef(layer);
+			var section = Refs.section(layer);
 			var map = section.map;
 
 			var subMesh = layer.GetSubMesh(MatBases.FogOfWar);

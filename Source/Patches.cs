@@ -120,12 +120,34 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(GenMapUI))]
 	[HarmonyPatch("DrawPawnLabel")]
-	[HarmonyPatch(new Type[] { typeof(Pawn), typeof(Vector2), typeof(float), typeof(float), typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) })]
+	//[HarmonyPatch(new [] { typeof(Pawn), typeof(Vector2), typeof(float), typeof(float), typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) })]
+	[HarmonyPatch(new[] { typeof(Pawn), typeof(Rect), typeof(float), typeof(float), typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) })]
 	static class GenMapUI_DrawPawnLabel_Patch
 	{
 		static bool Prefix()
 		{
-			return (Refs.controller?.battleOverview?.showing ?? true) == false;
+			return Refs.controller.BattleOverview.showing == false;
+		}
+
+		static void Postfix(Pawn pawn, Rect bgRect)
+		{
+			var controller = Refs.controller;
+			if (controller.BattleOverview.showing)
+			{
+				var team = controller.TeamForPawn(pawn);
+				if (team == null) return;
+
+				var m = bgRect.center.x;
+				bgRect.xMin = m - 7;
+				bgRect.xMax = m + 7;
+				bgRect.yMin += 14;
+				bgRect.height = 14;
+
+				GUI.DrawTexture(bgRect, Refs.TeamIdOuter);
+				GUI.color = team.color;
+				GUI.DrawTexture(bgRect.ContractedBy(1), Refs.TeamIdInner);
+				GUI.color = Color.white;
+			}
 		}
 	}
 
@@ -323,49 +345,111 @@ namespace RimBattle
 			if (pawn.Position == value) return;
 			if (pawn.Faction != Faction.OfPlayer) return;
 
-			if (Refs.controller.mapParts.TryGetValue(map, out var mapPart))
-				map.DoInCircle(value, pawn.WeaponRange(), mapPart.visibility.MakeVisible);
+			// TODO: if this is too slow, make a co-routine and queue work to it
+			var controller = Refs.controller;
+			if (controller.IsMyColonist(pawn))
+				if (controller.mapParts.TryGetValue(map, out var mapPart))
+					map.DoInCircle(value, pawn.WeaponRange(), mapPart.visibility.MakeVisible);
 		}
 	}
 
-	// fake IsFogged 1
+	// show other colonists only if they are close by
 	//
-	[HarmonyPatch(typeof(FogGrid))]
-	[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(IntVec3) })]
-	static class FogGrid_IsFogged1_Patch
+	[HarmonyPatch(typeof(PawnRenderer))]
+	[HarmonyPatch("RenderPawnInternal")]
+	[HarmonyPatch(new[] { typeof(Vector3), typeof(float), typeof(bool), typeof(Rot4), typeof(Rot4), typeof(RotDrawMode), typeof(bool), typeof(bool) })]
+	static class PawnRenderer_RenderPawnInternal_Patch
 	{
-		static bool Prefix(Map ___map, IntVec3 c, ref bool __result)
+		static bool Prefix(Vector3 rootLoc, Pawn ___pawn)
 		{
-			if (c.InBounds(___map) == false)
-			{
-				__result = false;
+			if (___pawn.Faction != Faction.OfPlayer) return true;
+			var map = ___pawn.Map;
+			if (map == null) return true;
+			return Refs.controller.IsInWeaponRange(___pawn);
+		}
+	}
+
+	/*[HarmonyPatch(typeof(PawnNameColorUtility))]
+	[HarmonyPatch(nameof(PawnNameColorUtility.PawnNameColorOf))]
+	static class PawnNameColorUtility_PawnNameColorOf_Patch
+	{
+		static bool Prefix(Pawn pawn, ref Color __result)
+		{
+			var team = Refs.controller.TeamForPawn(pawn);
+			if (team == null) return true;
+			__result = team.color;
+			return false;
+		}
+	}*/
+
+	// show only our colonists in colonistbar
+	//
+	[HarmonyPatch(typeof(PlayerPawnsDisplayOrderUtility))]
+	[HarmonyPatch(nameof(PlayerPawnsDisplayOrderUtility.Sort))]
+	static class PlayerPawnsDisplayOrderUtility_Sort_Patch
+	{
+		static void Prefix(List<Pawn> pawns)
+		{
+			var controller = Refs.controller;
+			var myColonists = pawns.Where(pawn => controller.IsMyColonist(pawn)).ToList();
+			pawns.Clear();
+			pawns.AddRange(myColonists);
+		}
+	}
+
+	// skip pawn-overlay if not discovered
+	//
+	[HarmonyPatch(typeof(PawnUIOverlay))]
+	[HarmonyPatch(nameof(PawnUIOverlay.DrawPawnGUIOverlay))]
+	static class PawnUIOverlay_DrawPawnGUIOverlay_Patch
+	{
+		static bool Prefix(Pawn ___pawn)
+		{
+			var controller = Refs.controller;
+			if (controller.IsVisible(___pawn) == false)
 				return false;
-			}
-
-			if (Refs.controller.mapParts.TryGetValue(___map, out var mapPart))
-				if (mapPart.visibility.IsVisible(c) == false)
-				{
-					__result = true;
-					return false;
-				}
-			return true;
+			return controller.IsInWeaponRange(___pawn);
 		}
 	}
 
-	// fake IsFogged 2
+	// skip thing-overlay if not discovered
 	//
-	[HarmonyPatch(typeof(FogGrid))]
-	[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(int) })]
-	static class FogGrid_IsFogged2_Patch
+	[HarmonyPatch(typeof(ThingOverlays))]
+	[HarmonyPatch(nameof(ThingOverlays.ThingOverlaysOnGUI))]
+	static class ThingOverlays_ThingOverlaysOnGUI_Patch
 	{
-		static bool Prefix(Map ___map, int index, ref bool __result)
+		static bool IsFogged(FogGrid grid, IntVec3 c)
 		{
-			if (Refs.controller.mapParts.TryGetValue(___map, out var mapPart))
-				if (mapPart.visibility.IsVisible(index) == false)
+			if (Refs.controller.IsVisible(Refs.map(grid), c) == false)
+				return false;
+			return grid.IsFogged(c);
+		}
+
+		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
+		{
+			return Transpilers.MethodReplacer(instructions,
+				SymbolExtensions.GetMethodInfo(() => new FogGrid(null).IsFogged(IntVec3.Zero)),
+				SymbolExtensions.GetMethodInfo(() => IsFogged(null, IntVec3.Zero))
+			);
+		}
+	}
+
+	// skip mote spawns if not discovered
+	//
+	[HarmonyPatch(typeof(GenSpawn))]
+	[HarmonyPatch(nameof(GenSpawn.Spawn))]
+	[HarmonyPatch(new[] { typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool) })]
+	static class GenSpawn_Spawn_Patch
+	{
+		static bool Prefix(Thing newThing, IntVec3 loc, Map map, ref Thing __result)
+		{
+			if (newThing is Mote && loc.InBounds(map))
+				if (Refs.controller.IsVisible(map, loc) == false)
 				{
-					__result = true;
+					__result = newThing;
 					return false;
 				}
+
 			return true;
 		}
 	}
@@ -394,15 +478,7 @@ namespace RimBattle
 	{
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
-			Func<Thing, bool> IsVisible = (thing) =>
-			{
-				var map = thing.Map;
-				if (map == null) return false;
-				if (Refs.controller.mapParts == null) return false;
-				if (Refs.controller.mapParts.TryGetValue(map, out var part) == false) return false;
-				if (part == null) return false;
-				return part.visibility.IsVisible(thing.Position);
-			};
+			Func<Thing, bool> IsVisible = (thing) => Refs.controller.IsVisible(thing.Map, thing.Position);
 
 			foreach (var instruction in instructions)
 			{
@@ -422,4 +498,49 @@ namespace RimBattle
 			}
 		}
 	}
+
+	// we cannot change IsFogged because the fog is local to each player
+	// if we do more than cosmetic stuff it will desync
+	//
+	// fake IsFogged 1
+	//
+	//[HarmonyPatch(typeof(FogGrid))]
+	//[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(IntVec3) })]
+	//static class FogGrid_IsFogged1_Patch
+	//{
+	//	static bool Prefix(Map ___map, IntVec3 c, ref bool __result)
+	//	{
+	//		if (c.InBounds(___map) == false)
+	//		{
+	//			__result = false;
+	//			return false;
+	//		}
+
+	//		if (Refs.controller.mapParts.TryGetValue(___map, out var mapPart))
+	//			if (mapPart.visibility.IsVisible(c) == false)
+	//			{
+	//				__result = true;
+	//				return false;
+	//			}
+	//		return true;
+	//	}
+	//}
+
+	// fake IsFogged 2
+	//
+	//[HarmonyPatch(typeof(FogGrid))]
+	//[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(int) })]
+	//static class FogGrid_IsFogged2_Patch
+	//{
+	//	static bool Prefix(Map ___map, int index, ref bool __result)
+	//	{
+	//		if (Refs.controller.mapParts.TryGetValue(___map, out var mapPart))
+	//			if (mapPart.visibility.IsVisible(index) == false)
+	//			{
+	//				__result = true;
+	//				return false;
+	//			}
+	//		return true;
+	//	}
+	//}
 }

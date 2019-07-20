@@ -21,11 +21,15 @@ namespace RimBattle
 			new Color(000, 255, 000),
 			new Color(255, 255, 000),
 			new Color(000, 255, 255),
-			new Color(128, 128, 128),
+			new Color(128, 000, 255),
 		};
 
 		public static readonly int[][][] teamTiles = new int[][][]
 			{
+				new [] // 1 tile
+				{
+					new[] { 0 }, // 1 team
+				},
 				new [] // 2 tiles
 				{
 					new[] { 0, 1 }, // 2 teams
@@ -74,7 +78,11 @@ namespace RimBattle
 		public static readonly int defaultVisibleRange = 6;
 		public static readonly Dictionary<float, HashSet<IntVec3>> circleCache = new Dictionary<float, HashSet<IntVec3>>();
 		public static readonly Dictionary<Pawn, Team> teamMemberCache = new Dictionary<Pawn, Team>();
-		public static readonly FieldRef<SectionLayer, Section> sectionRef = FieldRefAccess<SectionLayer, Section>("section");
+
+		public static readonly FieldRef<SectionLayer, Section> section = FieldRefAccess<SectionLayer, Section>("section");
+		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
+		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
+
 		public static readonly string[] tileNames = new string[] { "Center", "Right", "TopRight", "TopLeft", "Left", "BottomLeft", "BottomRight" };
 
 		public static readonly Color notVisibleColor = new ColorInt(32, 32, 32).ToColor;
@@ -91,8 +99,8 @@ namespace RimBattle
 		public static readonly Material SelectedTileError = MaterialPool.MatFrom("SelectedTileError", ShaderDatabase.WorldOverlayAdditive, 3560);
 		public static readonly Texture2D[] Configs = Tools.GetTextures("Tiles/Config#", 1, 7);
 		public static readonly Texture2D[] Teams = Tools.GetTextures("Tiles/Team#", 1, 7);
-
-		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
+		public static readonly Texture2D TeamIdInner = ContentFinder<Texture2D>.Get("TeamIdInner");
+		public static readonly Texture2D TeamIdOuter = ContentFinder<Texture2D>.Get("TeamIdOuter");
 
 		public static readonly MainButtonDef Battle = new MainButtonDef()
 		{

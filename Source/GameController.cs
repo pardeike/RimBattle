@@ -1,4 +1,5 @@
 ﻿using RimWorld.Planet;
+using Steamworks;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -8,16 +9,17 @@ namespace RimBattle
 {
 	public class GameController : WorldComponent
 	{
-		public static int tileCount = 5;
-		public static int teamCount = 3;
+		public static int tileCount = 2;
+		public static int teamCount = 2;
 		public static int totalTickets = 20;
 		public static int maxQuadrums = 8; // 2 years
 
 		public List<int> tiles;
 
-		public int myTeamID;
 		public BattleOverview battleOverview;
 		public Dictionary<Map, MapPart> mapParts;
+
+		public int team;
 		public List<Team> teams = new List<Team>();
 
 		private List<Map> tmpMaps;
@@ -25,11 +27,11 @@ namespace RimBattle
 
 		public GameController(World world) : base(world)
 		{
-			myTeamID = 1; // TODO
+			team = 0; // TODO
 			mapParts = new Dictionary<Map, MapPart>();
 		}
 
-		public static int[] TilePattern => Refs.teamTiles[tileCount - 2][tileCount - 2];
+		public static int[] TilePattern => Refs.teamTiles[tileCount - 1][tileCount - 2];
 
 		public void CreateMapPart(Map map)
 		{
@@ -63,6 +65,41 @@ namespace RimBattle
 			return MapForTile(tiles[n]);
 		}
 
+		public Team TeamForPawn(Pawn pawn)
+		{
+			return teams.FirstOrDefault(team => team.members.Contains(pawn));
+		}
+
+		public bool IsMyColonist(Pawn pawn)
+		{
+			return teams[team].members.Contains(pawn);
+		}
+
+		public IEnumerable<Pawn> MyColonistsOn(Map map)
+		{
+			return teams[team].members.Where(pawn => pawn.Map == map);
+		}
+
+		public bool IsVisible(Map map, IntVec3 loc)
+		{
+			if (map == null) return false;
+			if (Refs.controller.mapParts.TryGetValue(map, out var mapPart))
+				return mapPart.visibility.IsVisible(loc);
+			return false;
+		}
+
+		public bool IsVisible(Pawn pawn)
+		{
+			return IsVisible(pawn.Map, pawn.Position);
+		}
+
+		public bool IsInWeaponRange(Pawn pawn)
+		{
+			if (IsMyColonist(pawn)) return true;
+			return MyColonistsOn(pawn.Map)
+				.Any(myColonist => myColonist.Position.DistanceToSquared(pawn.Position) <= myColonist.WeaponRange(true));
+		}
+
 		public void OnGUI()
 		{
 			if (Keys.BattleMap.KeyDownEvent)
@@ -78,7 +115,7 @@ namespace RimBattle
 		{
 			base.ExposeData();
 			Scribe_Collections.Look(ref tiles, "tiles");
-			Scribe_Values.Look(ref myTeamID, "myTeamID");
+			// TODO: Scribe_Values.Look(ref team, "team");
 			Scribe_Collections.Look(ref mapParts, "mapParts", LookMode.Reference, LookMode.Deep, ref tmpMaps, ref tmpMapParts);
 			Scribe_Collections.Look(ref teams, "teams", LookMode.Deep);
 		}

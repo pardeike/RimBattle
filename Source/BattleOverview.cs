@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Linq;
 using UnityEngine;
 using Verse;
@@ -7,11 +8,11 @@ namespace RimBattle
 {
 	public class BattleOverview
 	{
-		const int outerspace = 20;
 		const int tabBarHeight = 35;
 
 		readonly MiniMap[] minimaps = new MiniMap[] { null, null, null, null, null, null, null };
 		public bool showing = false;
+		public bool lastShowing = false;
 		int mapCounter = -1;
 
 		public void OnGUI()
@@ -20,25 +21,46 @@ namespace RimBattle
 				Draw();
 		}
 
+		void UpdateTextureFully()
+		{
+			for (var i = 0; i < GameController.tileCount; i++)
+			{
+				if (minimaps[i] == null)
+					minimaps[i] = new MiniMap(i);
+				minimaps[i].UpdateTextureFully();
+			}
+		}
+
+		IEnumerator updater = null;
 		public void Update()
 		{
 			if (mapCounter == -1)
 			{
-				for (var i = 0; i < GameController.tileCount; i++)
-				{
-					if (minimaps[i] == null)
-						minimaps[i] = new MiniMap(i);
-					minimaps[i].UpdateTexture();
-				}
+				UpdateTextureFully();
 				return;
 			}
 
-			if (Find.TickManager.TicksGame % 100 == 0)
+			if (Find.TickManager.Paused)
+				return;
+
+			if (showing == false)
+			{
+				lastShowing = false;
+				return;
+			}
+
+			if (lastShowing == false)
+			{
+				UpdateTextureFully();
+				lastShowing = true;
+				return;
+			}
+
+			updater = updater ?? minimaps[mapCounter].UpdateTexture();
+			if (updater.MoveNext() == false)
 			{
 				mapCounter = (mapCounter + 1) % GameController.tileCount;
-				if (minimaps[mapCounter] == null)
-					minimaps[mapCounter] = new MiniMap(mapCounter);
-				minimaps[mapCounter].UpdateTexture();
+				updater = minimaps[mapCounter].UpdateTexture();
 			}
 		}
 
@@ -59,72 +81,47 @@ namespace RimBattle
 
 		private void DrawMaps()
 		{
-			var devToolsHeight = Prefs.DevMode ? 25 : 0;
-
 			var innerspace = 4;
-			var halfspace = innerspace / 2;
+			var outerspace = 20;
+			var devToolsHeight = Prefs.DevMode ? 25 : 0;
 			var midX = UI.screenWidth / 2;
-			var topSpace = outerspace + devToolsHeight;
+			var midZ = outerspace + devToolsHeight + (UI.screenHeight - devToolsHeight - outerspace - tabBarHeight - outerspace) / 2;
 
-			Vector2[] Positions(int n, out int dim)
+			var colCounts = new int[][] {
+				new int[] { 1 },
+				new int[] { 2 },
+				new int[] { 3 },
+				new int[] { 2, 2 },
+				new int[] { 2, 1, 2 },
+				new int[] { 2, 2, 2 },
+				new int[] { 2, 3, 2 },
+			}[GameController.tileCount - 1];
+
+			var rowCount = colCounts.Length;
+			var maxColCount = colCounts.Max();
+
+			var dx = (UI.screenWidth - (maxColCount - 1) * innerspace - 2 * outerspace) / maxColCount;
+			var dz = (UI.screenHeight - (rowCount - 1) * innerspace - 2 * outerspace - tabBarHeight - devToolsHeight) / rowCount;
+			var dim = Math.Min(dx, dz);
+			var h = rowCount * dim + (rowCount - 1) * innerspace;
+
+			var shearAmount = 0;
+			if (colCounts.Count() > 1 && colCounts.All(n => n % 2 == 0))
+				shearAmount = (dim + innerspace) / -4;
+
+			var i = 0;
+			for (var row = 0; row < rowCount; row++)
 			{
-				var dx = (UI.screenWidth - 2 * outerspace - 2 * innerspace) / 3;
-				var dz = (UI.screenHeight - 2 * outerspace - 2 * innerspace - tabBarHeight - devToolsHeight) / 3;
-				dim = Math.Min(dx, dz);
-				var halfdim = dim / 2;
+				var colCount = colCounts[row];
+				var z = midZ - h / 2 + row * dim + (row - 1) * innerspace;
 
-				// ---#3#-#2#---
-				// -#4#-#0#-#1#-
-				// ---#5#-#6#---
-
-				return new Vector2[][] {
-					new [] { // #2
-						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // c
-						new Vector2(midX - halfdim - innerspace - dim, topSpace + dim + innerspace), // r
-					},
-					new [] { // #3
-						new Vector2(midX - halfdim - innerspace - dim, topSpace + dim + innerspace), // l
-						new Vector2(midX - halfdim, topSpace + dim + innerspace), //c
-						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
-					},
-					new [] { // #4
-						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
-						new Vector2(midX + halfspace, topSpace + 0), // tr
-						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
-						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
-					},
-					new [] { // #5
-						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
-						new Vector2(midX + halfspace, topSpace + 0), // tr
-						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
-						new Vector2(midX - halfspace - dim, topSpace + dim + innerspace + dim + innerspace), // bl
-						new Vector2(midX + halfspace, topSpace + dim + innerspace + dim + innerspace), // br
-					},
-					new [] { // #6
-						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
-						new Vector2(midX + halfspace, topSpace + 0), // tr
-						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
-						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
-						new Vector2(midX - halfspace - dim, topSpace + dim + innerspace + dim + innerspace), // bl
-						new Vector2(midX + halfspace, topSpace + dim + innerspace + dim + innerspace), // br
-					},
-					new [] { // #7
-						new Vector2(midX - halfspace - dim, topSpace + 0), // tl
-						new Vector2(midX + halfspace, topSpace + 0), // tr
-						new Vector2(midX - halfdim - innerspace - dim, topSpace + dim + innerspace), // l
-						new Vector2(midX - halfdim, topSpace + dim + innerspace), // c
-						new Vector2(midX + halfdim + innerspace, topSpace + dim + innerspace), // r
-						new Vector2(midX - halfspace - dim, topSpace + dim + innerspace + dim + innerspace), // bl
-						new Vector2(midX + halfspace, topSpace + dim + innerspace + dim + innerspace), // br
-					}
-				}[n];
-			}
-
-			var positions = Positions(GameController.tileCount - 2, out var size);
-			for (var i = 0; i < GameController.tileCount; i++)
-			{
-				var mapRect = new Rect(positions[i], new Vector2(size, size));
-				minimaps[i]?.Draw(mapRect);
+				var w = colCount * dim + (colCount - 1) * innerspace;
+				for (var col = 0; col < colCount; col++)
+				{
+					var x = midX - w / 2 + col * dim + (col - 1) * innerspace;
+					minimaps[i++]?.Draw(new Rect(x + shearAmount, z, dim, dim));
+					shearAmount *= -1;
+				}
 			}
 		}
 	}
