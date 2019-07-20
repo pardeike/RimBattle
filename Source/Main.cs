@@ -14,7 +14,7 @@ namespace RimBattle
 		{
 			Settings = GetSettings<RimBattleModSettings>();
 
-			//HarmonyInstance.DEBUG = true;
+			// HarmonyInstance.DEBUG = true;
 			var harmony = HarmonyInstance.Create("net.pardeike.rimworld.mod.rimbattle");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
 		}

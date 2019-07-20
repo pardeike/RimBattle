@@ -522,6 +522,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn ___pawn)
 		{
+			if (Refs.controller.BattleOverview.showing) return false;
 			var controller = Refs.controller;
 			if (controller.IsVisible(___pawn) == false)
 				return false;
@@ -529,7 +530,21 @@ namespace RimBattle
 		}
 	}
 
-	// skip thing-overlay if not discovered
+	// skip thing-overlay if not discovered (1)
+	//
+	[HarmonyPatch(typeof(Thing))]
+	[HarmonyPatch(nameof(Thing.DrawGUIOverlay))]
+	static class Thing_DrawGUIOverlay_Patch
+	{
+		[HarmonyPriority(10000)]
+		static bool Prefix(Thing __instance)
+		{
+			if (Refs.controller.BattleOverview.showing) return false;
+			return Refs.controller.IsVisible(__instance);
+		}
+	}
+
+	// skip thing-overlay if not discovered (2)
 	//
 	[HarmonyPatch(typeof(ThingOverlays))]
 	[HarmonyPatch(nameof(ThingOverlays.ThingOverlaysOnGUI))]
@@ -537,6 +552,7 @@ namespace RimBattle
 	{
 		static bool IsFogged(FogGrid grid, IntVec3 c)
 		{
+			if (Refs.controller.BattleOverview.showing) return false;
 			if (Refs.controller.IsVisible(Refs.map(grid), c) == false)
 				return false;
 			return grid.IsFogged(c);
@@ -620,7 +636,103 @@ namespace RimBattle
 		}
 	}
 
+	// add form caravan button if colonists or colony animals are selected
+	//
+	[HarmonyPatch(typeof(InspectGizmoGrid))]
+	[HarmonyPatch(nameof(InspectGizmoGrid.DrawInspectGizmoGridFor))]
+	static class InspectGizmoGrid_DrawInspectGizmoGridFor_Patch
+	{
+		static void ClearAndAddOurGizmo(List<Gizmo> list)
+		{
+			list.Clear();
+
+			if (Find.Selector.SelectedObjects.All(obj =>
+			{
+				var pawn = obj as Pawn;
+				if (pawn == null) return false;
+				if (pawn.IsColonistPlayerControlled) return true;
+				return pawn.RaceProps.Animal && pawn.Faction == Faction.OfPlayer;
+			}) == false) return;
+
+			list.Add(new Command_Action
+			{
+				defaultLabel = "CommandFormCaravan".Translate(),
+				defaultDesc = "CommandFormCaravanDesc".Translate(),
+				icon = FormCaravanComp.FormCaravanCommand,
+				hotKey = KeyBindingDefOf.Misc2,
+				tutorTag = "FormCaravan",
+				action = delegate () { Find.WindowStack.Add(new Dialog_FormCaravan(Find.CurrentMap, false, null, false)); }
+			});
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(Instructions instructions)
+		{
+			var m_List_Gizmo_Clear = SymbolExtensions.GetMethodInfo(() => new List<Gizmo>().Clear());
+			var m_ClearAndAddOurGizmo = SymbolExtensions.GetMethodInfo(() => ClearAndAddOurGizmo(null));
+			foreach (var instruction in instructions)
+			{
+				var first = true;
+				if (first)
+					if (instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt)
+						if (instruction.operand == m_List_Gizmo_Clear)
+						{
+							instruction.opcode = OpCodes.Call;
+							instruction.operand = m_ClearAndAddOurGizmo;
+							first = false;
+						}
+				yield return instruction;
+			}
+		}
+	}
+
+	// preselect all selected pawns in the form caravan dialog
+	//
+	[HarmonyPatch(typeof(Dialog_FormCaravan))]
+	[HarmonyPatch(nameof(Dialog_FormCaravan.PostOpen))]
+	static class Dialog_FormCaravan_PostOpen_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(List<TransferableOneWay> ___transferables)
+		{
+			___transferables.Do(transferable =>
+			{
+				if (transferable.things.Count != 1) return;
+				var pawn = transferable.things.First() as Pawn;
+				if (pawn == null) return;
+				if (Find.Selector.IsSelected(pawn))
+					transferable.AdjustTo(transferable.GetMaximumToTransfer());
+			});
+		}
+	}
+
 	// -- maybe used later ----------------------------------------------------------
+
+	/*[HarmonyPatch(typeof(Pawn))]
+	[HarmonyPatch(nameof(Pawn.GetGizmos))]
+	static class Pawn_GetGizmos_Patch
+	{
+		[HarmonyPriority(10000)]
+		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, Pawn __instance)
+		{
+			foreach (var gizmo in gizmos)
+				yield return gizmo;
+
+			if (__instance.IsColonistPlayerControlled)
+				yield return new Command_Action
+				{
+					defaultLabel = "CommandFormCaravan".Translate(),
+					defaultDesc = "CommandFormCaravanDesc".Translate(),
+					icon = FormCaravanComp.FormCaravanCommand,
+					hotKey = KeyBindingDefOf.Misc2,
+					tutorTag = "FormCaravan",
+					action = delegate ()
+					{
+						Find.WindowStack.Add(new Dialog_FormCaravan(__instance.Map, false, null, false));
+					}
+				};
+		}
+	}*/
 
 	/*[HarmonyPatch(typeof(PawnNameColorUtility))]
 	[HarmonyPatch(nameof(PawnNameColorUtility.PawnNameColorOf))]

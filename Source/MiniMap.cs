@@ -62,6 +62,9 @@ namespace RimBattle
 				if (pawn.RaceProps.Humanlike == false)
 					return;
 
+				if (pawn.Position.IsValid == false)
+					return;
+
 				var cellIndex = map.cellIndices.CellToIndex(pawn.Position);
 				if (fogGrid.IsFogged(cellIndex) || visibleGrid.IsVisible(cellIndex) == false)
 					return;

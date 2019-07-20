@@ -9,7 +9,7 @@ namespace RimBattle
 {
 	public class GameController : WorldComponent
 	{
-		public static int tileCount = 2;
+		public static int tileCount = 3;
 		public static int teamCount = 2;
 		public static int totalTickets = 20;
 		public static int maxQuadrums = 8; // 2 years
