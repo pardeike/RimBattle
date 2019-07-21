@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace RimBattle
 {
@@ -387,6 +388,45 @@ namespace RimBattle
 		}
 	}
 
+	// skip to draw progressbar if not in visible range
+	//
+	[HarmonyPatch(typeof(ToilEffects))]
+	[HarmonyPatch(nameof(ToilEffects.WithProgressBar))]
+	static class ToilEffects_WithProgressBar_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(Toil toil)
+		{
+			var last2 = toil.preTickActions.Count - 1;
+			var action2 = toil.preTickActions[last2];
+			toil.preTickActions[last2] = delegate
+			{
+				if (toil.actor.Faction != Faction.OfPlayer || Refs.controller.IsInWeaponRange(toil.actor))
+					action2();
+			};
+		}
+	}
+
+	// skip to draw effecter if not in visible range
+	//
+	[HarmonyPatch(typeof(ToilEffects))]
+	[HarmonyPatch(nameof(ToilEffects.WithEffect))]
+	[HarmonyPatch(new[] { typeof(Toil), typeof(Func<EffecterDef>), typeof(Func<LocalTargetInfo>) })]
+	static class ToilEffects_WithEffect_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(Toil toil)
+		{
+			var i = toil.preTickActions.Count - 1;
+			var action = toil.preTickActions[i];
+			toil.preTickActions[i] = delegate
+			{
+				if (toil.actor.Faction != Faction.OfPlayer || Refs.controller.IsInWeaponRange(toil.actor))
+					action();
+			};
+		}
+	}
+
 	// draw pawn shadows only if close by
 	// 
 	[HarmonyPatch(typeof(Graphic))]
@@ -722,6 +762,25 @@ namespace RimBattle
 	}
 
 	// -- maybe used later ----------------------------------------------------------
+
+	/*[HarmonyPatch(typeof(DynamicDrawManager))]
+	[HarmonyPatch(nameof(DynamicDrawManager.DrawDynamicThings))]
+	static class DynamicDrawManager_DrawDynamicThings_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Prefix(HashSet<Thing> ___drawThings, out List<Thing> __state)
+		{
+			__state = ___drawThings.ToList();
+			___drawThings.RemoveWhere(thing => Refs.controller.IsVisible(thing) == false);
+		}
+
+		[HarmonyPriority(10000)]
+		static void Postfix(HashSet<Thing> ___drawThings, List<Thing> __state)
+		{
+			___drawThings.Clear();
+			___drawThings.AddRange(__state);
+		}
+	}*/
 
 	/*[HarmonyPatch(typeof(Pawn))]
 	[HarmonyPatch(nameof(Pawn.GetGizmos))]

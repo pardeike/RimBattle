@@ -100,6 +100,12 @@ namespace RimBattle
 				.Any(myColonist => myColonist.Position.DistanceToSquared(pawn.Position) <= myColonist.WeaponRange(true));
 		}
 
+		public bool IsInWeaponRange(TargetInfo targetInfo)
+		{
+			return MyColonistsOn(targetInfo.Map)
+				.Any(myColonist => myColonist.Position.DistanceToSquared(targetInfo.Cell) <= myColonist.WeaponRange(true));
+		}
+
 		public void OnGUI()
 		{
 			if (Keys.BattleMap.KeyDownEvent)
