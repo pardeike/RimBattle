@@ -96,7 +96,7 @@ namespace RimBattle
 					var map = MapGenerator.GenerateMap(mapSize, settlement, settlement.MapGeneratorDef, settlement.ExtraGenStepDefs, null);
 					PawnUtility.GiveAllStartingPlayerPawnsThought(ThoughtDefOf.NewColonyOptimism);
 					if (hasTeam)
-						Team.CreateWithColonistsOnMap(map);
+						Team.CreateWithColonists();
 					Refs.controller.CreateMapPart(map);
 				}
 
@@ -226,6 +226,7 @@ namespace RimBattle
 		public static int GetAdjactedTile(int baseTile, int n)
 		{
 			if (baseTile == -1) return -1;
+			if (Current.Game != null && n > 0) return -1;
 			var adjactedTiles = CalculateTiles(baseTile);
 			if (n < 0 || n >= adjactedTiles.Length) return -1;
 			return adjactedTiles[n];

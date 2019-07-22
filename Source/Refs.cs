@@ -79,9 +79,10 @@ namespace RimBattle
 		public static readonly Dictionary<float, HashSet<IntVec3>> circleCache = new Dictionary<float, HashSet<IntVec3>>();
 		public static readonly Dictionary<Pawn, Team> teamMemberCache = new Dictionary<Pawn, Team>();
 
-		public static readonly FieldRef<SectionLayer, Section> section = FieldRefAccess<SectionLayer, Section>("section");
+		public static readonly FieldRef<SectionLayer, Section> SectionLayer_section = FieldRefAccess<SectionLayer, Section>("section");
 		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
 		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
+		public static readonly FieldRef<TransferableOneWayWidget, List<object>> TransferableOneWayWidget_sections = FieldRefAccess<TransferableOneWayWidget, List<object>>("sections");
 
 		public static readonly string[] tileNames = new string[] { "Center", "Right", "TopRight", "TopLeft", "Left", "BottomLeft", "BottomRight" };
 

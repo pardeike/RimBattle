@@ -72,6 +72,7 @@ namespace RimBattle
 
 		public bool IsMyColonist(Pawn pawn)
 		{
+			if (pawn == null) return false;
 			return teams[team].members.Contains(pawn);
 		}
 

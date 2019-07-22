@@ -1,8 +1,6 @@
 ﻿using Harmony;
 using RimWorld;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -13,7 +11,6 @@ namespace RimBattle
 	{
 		readonly Vector2 markerSize = new Vector2(4, 4);
 
-		readonly int idx;
 		readonly Map map;
 		int mapSizeX;
 		int mapSizeZ;
@@ -23,7 +20,6 @@ namespace RimBattle
 
 		public MiniMap(int idx)
 		{
-			this.idx = idx;
 			map = Refs.controller.MapByIndex(idx);
 			texture = new Texture2D(map.Size.x, map.Size.z, TextureFormat.RGB24, true);
 		}
@@ -111,6 +107,8 @@ namespace RimBattle
 				SoundDefOf.MapSelected.PlayOneShotOnCamera(null);
 				Current.Game.CurrentMap = map;
 			}
+
+			GUI.color = Color.white;
 		}
 
 		public void UpdateTextureFully()
@@ -133,7 +131,6 @@ namespace RimBattle
 				texture.Apply(true);
 			}
 
-			var pawns = new List<Pawn>();
 			var visibility = Refs.controller.mapParts[map].visibility;
 			for (var x = 0; x < mapSizeX; x++)
 				for (var z = 0; z < mapSizeZ; z++)

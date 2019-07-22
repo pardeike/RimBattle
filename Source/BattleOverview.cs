@@ -67,7 +67,7 @@ namespace RimBattle
 		public void Draw()
 		{
 			DrawBackground();
-			DrawMaps();
+			DrawMaps(new Rect(0, 0, UI.screenWidth, UI.screenHeight));
 		}
 
 		private void DrawBackground()
@@ -79,13 +79,14 @@ namespace RimBattle
 			Widgets.DrawBoxSolid(rect, new Color(0f, 0f, 0f, 0.6f));
 		}
 
-		private void DrawMaps()
+		public void DrawMaps(Rect baseRect, bool withMargins = true)
 		{
+			var tabBarSize = withMargins ? tabBarHeight : 0;
 			var innerspace = 4;
-			var outerspace = 20;
-			var devToolsHeight = Prefs.DevMode ? 25 : 0;
-			var midX = UI.screenWidth / 2;
-			var midZ = outerspace + devToolsHeight + (UI.screenHeight - devToolsHeight - outerspace - tabBarHeight - outerspace) / 2;
+			var outerspace = withMargins ? 20 : 0;
+			var devToolsHeight = withMargins && Prefs.DevMode ? 25 : 0;
+			var midX = baseRect.width / 2;
+			var midZ = outerspace + devToolsHeight + (baseRect.height - devToolsHeight - outerspace - tabBarSize - outerspace) / 2;
 
 			var colCounts = new int[][] {
 				new int[] { 1 },
@@ -100,27 +101,28 @@ namespace RimBattle
 			var rowCount = colCounts.Length;
 			var maxColCount = colCounts.Max();
 
-			var dx = (UI.screenWidth - (maxColCount - 1) * innerspace - 2 * outerspace) / maxColCount;
-			var dz = (UI.screenHeight - (rowCount - 1) * innerspace - 2 * outerspace - tabBarHeight - devToolsHeight) / rowCount;
-			var dim = Math.Min(dx, dz);
-			var h = rowCount * dim + (rowCount - 1) * innerspace;
+			var hasOddRowOffset = colCounts.Count() > 1 && colCounts.All(n => n % 2 == 0);
+			var adjustedColCount = maxColCount + (hasOddRowOffset ? 0.5f : 0f);
 
-			var shearAmount = 0;
-			if (colCounts.Count() > 1 && colCounts.All(n => n % 2 == 0))
-				shearAmount = (dim + innerspace) / -4;
+			var dx = (baseRect.width - (adjustedColCount - 1) * innerspace - 2 * outerspace) / adjustedColCount;
+			var dz = (baseRect.height - (rowCount - 1) * innerspace - 2 * outerspace - tabBarSize - devToolsHeight) / rowCount;
+			var dim = Math.Min(dx, dz);
+			var dimPlusSpace = dim + innerspace;
+			var realHeight = rowCount * dimPlusSpace - innerspace;
+			var realWidth = adjustedColCount * dimPlusSpace - innerspace;
 
 			var i = 0;
 			for (var row = 0; row < rowCount; row++)
 			{
 				var colCount = colCounts[row];
-				var z = midZ - h / 2 + row * dim + (row - 1) * innerspace;
+				var rowOffset = colCount < maxColCount ? dimPlusSpace / 2 : 0;
+				var z = midZ - realHeight / 2 + row * dimPlusSpace;
+				var oddRowOffset = hasOddRowOffset && (row % 2 != 0) ? dimPlusSpace / 2 : 0f;
 
-				var w = colCount * dim + (colCount - 1) * innerspace;
 				for (var col = 0; col < colCount; col++)
 				{
-					var x = midX - w / 2 + col * dim + (col - 1) * innerspace;
-					minimaps[i++]?.Draw(new Rect(x + shearAmount, z, dim, dim));
-					shearAmount *= -1;
+					var x = midX - realWidth / 2 + col * dimPlusSpace;
+					minimaps[i++]?.Draw(new Rect(baseRect.x + x + oddRowOffset + rowOffset, baseRect.y + z, dim, dim));
 				}
 			}
 		}

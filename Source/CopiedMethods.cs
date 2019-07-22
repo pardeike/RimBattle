@@ -11,7 +11,7 @@ namespace RimBattle
 		//
 		public static void RegenerateFog(SectionLayer layer)
 		{
-			var section = Refs.section(layer);
+			var section = Refs.SectionLayer_section(layer);
 			var map = section.map;
 
 			var subMesh = layer.GetSubMesh(MatBases.FogOfWar);
@@ -123,7 +123,7 @@ namespace RimBattle
 			var cellIndices = map.cellIndices;
 
 			var y = AltitudeLayer.Zone.AltitudeFor();
-			var zoneManager = Find.CurrentMap.zoneManager;
+			var zoneManager = map.zoneManager;
 			var cellRect = new CellRect(section.botLeft.x, section.botLeft.z, 17, 17);
 			cellRect.ClipInsideMap(map);
 

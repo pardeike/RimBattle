@@ -29,7 +29,7 @@ namespace RimBattle
 			members = new HashSet<Pawn>();
 		}
 
-		public static void CreateWithColonistsOnMap(Map map)
+		public static void CreateWithColonists()
 		{
 			var existingTeams = Refs.controller.teams;
 			var team = new Team(existingTeams.Count);
