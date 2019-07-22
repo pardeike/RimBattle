@@ -1,14 +1,12 @@
 ﻿using Harmony;
 using RimWorld;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Verse;
 
 namespace RimBattle
 {
-	public class Team : IExposable, IComparable<Team>
+	public class Team : IExposable
 	{
 		public int id;
 		public string name;
@@ -47,12 +45,6 @@ namespace RimBattle
 		{
 			members.Remove(pawn);
 			Refs.teamMemberCache.Remove(pawn);
-		}
-
-		public int CompareTo(Team otherTeam)
-		{
-			if (id == otherTeam.id) return 0;
-			return id > otherTeam.id ? -1 : 1;
 		}
 
 		public void ExposeData()

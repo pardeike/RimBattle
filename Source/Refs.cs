@@ -72,10 +72,10 @@ namespace RimBattle
 			};
 
 		public static GameController controller;
-		public static readonly int forceMapSize = 120;
-		public static readonly int startTickets = 100;
+		public const int forceMapSize = 120;
+		public const int startTickets = 100;
 
-		public static readonly int defaultVisibleRange = 6;
+		public const int defaultVisibleRange = 6;
 		public static readonly Dictionary<float, HashSet<IntVec3>> circleCache = new Dictionary<float, HashSet<IntVec3>>();
 		public static readonly Dictionary<Pawn, Team> teamMemberCache = new Dictionary<Pawn, Team>();
 
@@ -114,7 +114,7 @@ namespace RimBattle
 		};
 	}
 
-	public class Keys
+	static class Keys
 	{
 		public static readonly KeyBindingDef BattleMap = new KeyBindingDef()
 		{

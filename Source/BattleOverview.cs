@@ -70,7 +70,7 @@ namespace RimBattle
 			DrawMaps(new Rect(0, 0, UI.screenWidth, UI.screenHeight));
 		}
 
-		private void DrawBackground()
+		static void DrawBackground()
 		{
 			if (Event.current.type != EventType.Repaint)
 				return;

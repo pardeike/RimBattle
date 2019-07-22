@@ -2,15 +2,16 @@
 
 namespace RimBattle
 {
-	public class ModCounter
+	static class ModCounter
 	{
 		// a very simple and gdpr friendly mod launch counter.
 		// no personal information is transfered and firebase
 		// doesn't store the IP or any other traceable information
 
-		static readonly string baseUrl = "http://us-central1-brrainz-mod-stats.cloudfunctions.net/ping?";
+		const string baseUrl = "http://us-central1-brrainz-mod-stats.cloudfunctions.net/ping?";
 		public static void Trigger()
 		{
+#pragma warning disable CA1031
 			try
 			{
 				var uri = new Uri(baseUrl + "RimBattle");
@@ -20,6 +21,7 @@ namespace RimBattle
 			catch (Exception)
 			{
 			}
+#pragma warning restore CA1031
 		}
 	}
 }

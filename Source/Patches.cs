@@ -739,11 +739,11 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix(List<TransferableOneWay> transferables, out TransferableOneWayWidget pawnsTransfer, out TransferableOneWayWidget itemsTransfer, string thingCountTip, IgnorePawnsInventoryMode ignorePawnInventoryMass, Func<float> availableMassGetter, bool ignoreSpawnedCorpsesGearAndInventoryMass, int tile, bool playerPawnsReadOnly)
 		{
-			Func<Thing, bool> IsColonist = (thing) => thing is Pawn && ((Pawn)thing).IsFreeColonist && Refs.controller.IsMyColonist((Pawn)thing);
-			Func<Thing, bool> IsPrisoner = (thing) => thing is Pawn && ((Pawn)thing).IsPrisoner;
-			Func<Thing, bool> IsCaptured = (thing) => thing is Pawn && ((Pawn)thing).Downed && CaravanUtility.ShouldAutoCapture((Pawn)thing, Faction.OfPlayer);
-			Func<Thing, bool> IsAnimal = (thing) => thing is Pawn && ((Pawn)thing).RaceProps.Animal; // TODO: add support for team animals
-			Func<Thing, bool> IsItem = (thing) => (thing is Pawn) == false && Refs.controller.IsVisible(thing);
+			bool IsColonist(Thing thing) => thing is Pawn && ((Pawn)thing).IsFreeColonist && Refs.controller.IsMyColonist((Pawn)thing);
+			bool IsPrisoner(Thing thing) => thing is Pawn && ((Pawn)thing).IsPrisoner;
+			bool IsCaptured(Thing thing) => thing is Pawn && ((Pawn)thing).Downed && CaravanUtility.ShouldAutoCapture((Pawn)thing, Faction.OfPlayer);
+			bool IsAnimal(Thing thing) => thing is Pawn && ((Pawn)thing).RaceProps.Animal; // TODO: add support for team animals
+			bool IsItem(Thing thing) => (thing is Pawn) == false && Refs.controller.IsVisible(thing);
 
 			pawnsTransfer = new TransferableOneWayWidget(transferables, null, null, thingCountTip, true, ignorePawnInventoryMass, false, availableMassGetter, 0f, ignoreSpawnedCorpsesGearAndInventoryMass, tile, true, false, false, true, false, true, playerPawnsReadOnly);
 			Refs.TransferableOneWayWidget_sections(pawnsTransfer).Clear();

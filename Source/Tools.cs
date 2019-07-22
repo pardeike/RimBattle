@@ -192,7 +192,7 @@ namespace RimBattle
 			var max = (center + 1 >= tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_values.Count : tileIDToNeighbors_offsets[center + 1];
 			for (var i = tileIDToNeighbors_offsets[center]; i < max; i++)
 				tiles.Add(tileIDToNeighbors_values[i]);
-			return GameController.TilePattern
+			return GameController.TilePattern()
 				.Where(idx => idx < tiles.Count)
 				.Select(idx => tiles[idx]).ToArray();
 		}

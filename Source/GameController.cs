@@ -31,7 +31,10 @@ namespace RimBattle
 			mapParts = new Dictionary<Map, MapPart>();
 		}
 
-		public static int[] TilePattern => Refs.teamTiles[tileCount - 1][tileCount - 2];
+		public static int[] TilePattern()
+		{
+			return Refs.teamTiles[tileCount - 1][tileCount - 2];
+		}
 
 		public void CreateMapPart(Map map)
 		{
@@ -84,7 +87,7 @@ namespace RimBattle
 		public bool IsVisible(Map map, IntVec3 loc)
 		{
 			if (map == null) return false;
-			if (Refs.controller.mapParts.TryGetValue(map, out var mapPart))
+			if (mapParts.TryGetValue(map, out var mapPart))
 				return mapPart.visibility.IsVisible(loc);
 			return false;
 		}
