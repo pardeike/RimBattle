@@ -37,6 +37,7 @@
     <Compile Include="BattleOverview.cs" />
     <Compile Include="ConfigGUI.cs" />
     <Compile Include="CopiedMethods.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="MapPart.cs" />
     <Compile Include="MiniMap.cs" />
     <Compile Include="Misc\CrossPromotion.cs" />

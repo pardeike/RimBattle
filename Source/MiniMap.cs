@@ -1,5 +1,6 @@
 ﻿using Harmony;
 using RimWorld;
+using System;
 using System.Collections;
 using UnityEngine;
 using Verse;
@@ -9,6 +10,15 @@ namespace RimBattle
 {
 	public class MiniMap
 	{
+		public class Configuration
+		{
+			public Func<Map, bool> isCurrent;
+			public Func<Map, Color?> isSelected;
+			public Func<Map, bool> canSelect;
+			public Action<Map> setSelected;
+			public bool canSelectMarkers;
+		}
+
 		readonly Vector2 markerSize = new Vector2(4, 4);
 
 		readonly Map map;
@@ -24,31 +34,60 @@ namespace RimBattle
 			texture = new Texture2D(map.Size.x, map.Size.z, TextureFormat.RGB24, true);
 		}
 
-		public void Draw(Rect rect)
+		public void Draw(Rect rect, Configuration config)
 		{
 			var repainting = Event.current.type == EventType.Repaint;
-
-			if (repainting)
-			{
-				if (!updated)
-					UpdateTexture();
-
-				GUI.color = Color.black;
-				Widgets.DrawBox(rect, 2);
-				GUI.color = Find.CurrentMap == map ? Color.yellow : Color.white;
-				Widgets.DrawBox(rect, 1);
-
-				rect = rect.ContractedBy(3);
-
-				GUI.color = Mouse.IsOver(rect) ? Color.white : (Find.CurrentMap == map ? new Color(0.9f, 0.9f, 0.9f) : new Color(0.8f, 0.8f, 0.8f));
-				GUI.DrawTexture(rect, texture, ScaleMode.ScaleToFit);
-			}
+			var isCurrent = config.isCurrent(map);
+			var isSelected = config.isSelected(map);
+			var canSelect = config.canSelect(map);
 
 			Rect Marker(Pawn pawn)
 			{
 				var pos = pawn.PositionHeld;
 				var offset = new Vector2((float)pos.x / mapSizeX * rect.width, (1 - (float)pos.z / mapSizeZ) * rect.height);
 				return new Rect(rect.position + offset - markerSize / 2, markerSize);
+			}
+
+			if (repainting)
+			{
+				if (!updated)
+					UpdateTexture();
+
+				if (isSelected.HasValue)
+				{
+					GUI.color = isSelected.Value;
+					Widgets.DrawBox(rect, 2);
+				}
+				else
+				{
+					GUI.color = Color.black;
+					Widgets.DrawBox(rect, 2);
+					GUI.color = canSelect ? Color.white : new Color(0.2f, 0.2f, 0.2f);
+					Widgets.DrawBox(rect, 1);
+				}
+
+				GUI.color = new Color(1f, 1f, 1f, 0.4f);
+				if (canSelect || isCurrent)
+					GUI.color = (canSelect && Mouse.IsOver(rect)) ? Color.white : (isSelected.HasValue ? new Color(0.9f, 0.9f, 0.9f) : new Color(0.8f, 0.8f, 0.8f));
+				GUI.DrawTexture(rect.ContractedBy(3), texture, ScaleMode.ScaleToFit);
+
+				if (isCurrent)
+				{
+					var length = rect.width / 6f;
+					var thick = Math.Min(8f, length / 5f);
+
+					Widgets.DrawBoxSolid(new Rect(rect.xMin, rect.yMin, length, thick), Color.white);
+					Widgets.DrawBoxSolid(new Rect(rect.xMin, rect.yMin, thick, length), Color.white);
+
+					Widgets.DrawBoxSolid(new Rect(rect.xMax - length, rect.yMin, length, thick), Color.white);
+					Widgets.DrawBoxSolid(new Rect(rect.xMax - thick, rect.yMin, thick, length), Color.white);
+
+					Widgets.DrawBoxSolid(new Rect(rect.xMin, rect.yMax - thick, length, thick), Color.white);
+					Widgets.DrawBoxSolid(new Rect(rect.xMin, rect.yMax - length, thick, length), Color.white);
+
+					Widgets.DrawBoxSolid(new Rect(rect.xMax - length, rect.yMax - thick, length, thick), Color.white);
+					Widgets.DrawBoxSolid(new Rect(rect.xMax - thick, rect.yMax - length, thick, length), Color.white);
+				}
 			}
 
 			var fogGrid = map.fogGrid;
@@ -74,6 +113,7 @@ namespace RimBattle
 				if (repainting)
 				{
 					var color = PawnNameColorUtility.PawnNameColorOf(pawn);
+					color.a = canSelect || isCurrent ? 1f : 0.4f;
 					Widgets.DrawBoxSolid(r, color);
 					if (Find.Selector.IsSelected(pawn))
 					{
@@ -82,31 +122,30 @@ namespace RimBattle
 					}
 				}
 
-				r = r.ContractedBy(-2);
-				if (Mouse.IsOver(r.ContractedBy(-2)))
+				if (config.canSelectMarkers)
 				{
-					if (repainting)
+					r = r.ContractedBy(-2);
+					if (Mouse.IsOver(r.ContractedBy(-2)))
 					{
-						GUI.color = Color.yellow;
-						Widgets.DrawBox(r, 1);
-					}
+						if (repainting)
+						{
+							GUI.color = Color.yellow;
+							Widgets.DrawBox(r, 1);
+						}
 
-					if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
-					{
-						Event.current.Use();
-						CameraJumper.TryJumpAndSelect(pawn);
-						Refs.controller.battleOverview.showing = false;
-						return;
+						if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
+						{
+							Event.current.Use();
+							CameraJumper.TryJumpAndSelect(pawn);
+							Refs.controller.battleOverview.showing = false;
+							return;
+						}
 					}
 				}
 			});
 
-			if (Widgets.ButtonInvisible(rect, true))
-			{
-				Refs.controller.battleOverview.showing = false;
-				SoundDefOf.MapSelected.PlayOneShotOnCamera(null);
-				Current.Game.CurrentMap = map;
-			}
+			if (canSelect && Widgets.ButtonInvisible(rect, true))
+				config.setSelected(map);
 
 			GUI.color = Color.white;
 		}

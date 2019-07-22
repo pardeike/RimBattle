@@ -71,6 +71,17 @@ namespace RimBattle
 				},
 			};
 
+		public static readonly int[][] adjactedTiles = new int[][]
+		{
+			new[] { 1, 2, 3, 4, 5, 6 },
+			new[] { 0, 2, 6 },
+			new[] { 0, 1, 3 },
+			new[] { 0, 2, 4 },
+			new[] { 0, 3, 5 },
+			new[] { 0, 4, 6 },
+			new[] { 0, 1, 5 },
+		};
+
 		public static GameController controller;
 		public const int forceMapSize = 120;
 		public const int startTickets = 100;
@@ -83,6 +94,9 @@ namespace RimBattle
 		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
 		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
 		public static readonly FieldRef<TransferableOneWayWidget, List<object>> TransferableOneWayWidget_sections = FieldRefAccess<TransferableOneWayWidget, List<object>>("sections");
+		public static readonly FieldRef<Dialog_FormCaravan, bool> canChooseRoute = FieldRefAccess<Dialog_FormCaravan, bool>("canChooseRoute");
+		public static readonly FieldRef<Dialog_FormCaravan, int> destinationTile = FieldRefAccess<Dialog_FormCaravan, int>("destinationTile");
+		public static readonly FieldRef<Dialog_FormCaravan, int> startingTile = FieldRefAccess<Dialog_FormCaravan, int>("startingTile");
 
 		public static readonly string[] tileNames = new string[] { "Center", "Right", "TopRight", "TopLeft", "Left", "BottomLeft", "BottomRight" };
 

@@ -708,6 +708,20 @@ namespace RimBattle
 		}
 	}
 
+	// caravan dialog must choose route
+	//
+	[HarmonyPatch(typeof(Dialog_FormCaravan))]
+	[HarmonyPatch("MustChooseRoute", MethodType.Getter)]
+	static class Dialog_FormCaravan_MustChooseRoute_Patch
+	{
+		[HarmonyPriority(10000)]
+		static bool Prefix(ref bool __result)
+		{
+			__result = true;
+			return false;
+		}
+	}
+
 	// preselect all selected pawns in the form caravan dialog
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
@@ -715,7 +729,7 @@ namespace RimBattle
 	static class Dialog_FormCaravan_PostOpen_Patch
 	{
 		[HarmonyPriority(10000)]
-		static void Postfix(List<TransferableOneWay> ___transferables)
+		static void Postfix(Dialog_FormCaravan __instance, List<TransferableOneWay> ___transferables)
 		{
 			___transferables.Do(transferable =>
 			{
@@ -725,6 +739,13 @@ namespace RimBattle
 				if (Find.Selector.IsSelected(pawn))
 					transferable.AdjustTo(transferable.GetMaximumToTransfer());
 			});
+
+			Refs.canChooseRoute(__instance) = true;
+			Refs.startingTile(__instance) = Find.CurrentMap.Tile;
+
+			var controller = Refs.controller;
+			var reachableTiles = controller.tiles.Where(tile => controller.CanReach(Find.CurrentMap.Tile, tile));
+			Refs.destinationTile(__instance) = reachableTiles.Count() == 1 ? reachableTiles.First() : -1;
 		}
 	}
 
@@ -815,7 +836,20 @@ namespace RimBattle
 		}
 	}
 
-	// no warnings in caravan dialog, no Choose route button
+	// no log food warning in caravan dialog
+	//
+	[HarmonyPatch(typeof(Dialog_FormCaravan))]
+	[HarmonyPatch("DaysWorthOfFood", MethodType.Getter)]
+	static class Dialog_FormCaravan_DaysWorthOfFood_Patch
+	{
+		static bool Prefix(ref Pair<float, float> __result)
+		{
+			__result = new Pair<float, float>(10f, 0f); // more than 5f is enough
+			return false;
+		}
+	}
+
+	// reordering elements and no choose route button in caravan dialog
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch("DoBottomButtons")]
@@ -827,8 +861,25 @@ namespace RimBattle
 		static int buttonCount;
 
 		[HarmonyPriority(10000)]
-		static void Prefix(Rect rect, ref bool ___canChooseRoute)
+		static void Prefix(Dialog_FormCaravan __instance, Rect rect, ref bool ___canChooseRoute)
 		{
+			Color? IsSelected(Map map)
+			{
+				if (map.Tile == Refs.destinationTile(__instance))
+					return Color.green;
+				return null;
+			}
+
+			bool CanSelect(Map map)
+			{
+				return Refs.controller.CanReach(Find.CurrentMap, map);
+			}
+
+			void SetSelected(Map map)
+			{
+				Refs.destinationTile(__instance) = map.Tile;
+			}
+
 			var mapHeight = Dialog_FormCaravan_DoWindowContents_Patch.miniMapDialogHeight;
 
 			dialogRect = rect;
@@ -839,7 +890,15 @@ namespace RimBattle
 			mapRect.yMin = rect.height - mapHeight - 86f + 14f;
 			mapRect.yMax -= 32f;
 			mapRect.width -= BottomButtonSize.x + 16f;
-			Refs.controller.BattleOverview.DrawMaps(mapRect, false);
+			var config = new MiniMap.Configuration()
+			{
+				isCurrent = map => Find.CurrentMap == map,
+				isSelected = IsSelected,
+				canSelect = CanSelect,
+				setSelected = SetSelected,
+				canSelectMarkers = false
+			};
+			Refs.controller.BattleOverview.DrawMaps(mapRect, false, config);
 		}
 
 		static bool ButtonTextReordered(Rect rect, string label, bool drawBackground, bool doMouseoverSound, bool active)
@@ -867,12 +926,12 @@ namespace RimBattle
 			{
 				if (codes[i].opcode == OpCodes.Call && codes[i].operand == m_ButtonText)
 					codes[i].operand = m_ButtonTextReordered;
-				if (codes[i].opcode == OpCodes.Ldloc_S)
+				/*if (codes[i].opcode == OpCodes.Ldloc_S)
 					if (codes[i + 1].opcode == OpCodes.Call || codes[i + 1].opcode == OpCodes.Callvirt)
 						if (codes[i + 2].opcode == OpCodes.Ldc_I4_0)
 							if (codes[i + 3].opcode == OpCodes.Ble)
 								for (var j = 0; j <= 3; j++)
-									codes[i + j].opcode = OpCodes.Nop;
+									codes[i + j].opcode = OpCodes.Nop;*/
 			}
 			return codes.AsEnumerable();
 		}

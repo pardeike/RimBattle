@@ -30,11 +30,6 @@ namespace RimBattle
 			mapParts = new Dictionary<Map, MapPart>();
 		}
 
-		public static int[] TilePattern()
-		{
-			return Refs.teamTiles[tileCount - 1][tileCount - 2];
-		}
-
 		public void CreateMapPart(Map map)
 		{
 			mapParts[map] = new MapPart(map);
@@ -62,9 +57,27 @@ namespace RimBattle
 				.FirstOrDefault(map => map.Tile == tile);
 		}
 
+		public int TileIndex(int tile)
+		{
+			var idx = tiles.IndexOf(tile);
+			return Tools.TilePattern()[idx];
+		}
+
 		public Map MapByIndex(int n)
 		{
 			return MapForTile(tiles[n]);
+		}
+
+		public bool CanReach(int tileFrom, int tileTo)
+		{
+			var idx1 = TileIndex(tileFrom);
+			var idx2 = TileIndex(tileTo);
+			return Refs.adjactedTiles[idx1].Contains(idx2);
+		}
+
+		public bool CanReach(Map mapFrom, Map mapTo)
+		{
+			return CanReach(mapFrom.Tile, mapTo.Tile);
 		}
 
 		public Team TeamForPawn(Pawn pawn)

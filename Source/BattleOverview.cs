@@ -1,8 +1,10 @@
-﻿using System;
+﻿using RimWorld;
+using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace RimBattle
 {
@@ -66,8 +68,22 @@ namespace RimBattle
 
 		public void Draw()
 		{
+			void SetSelected(Map map)
+			{
+				Current.Game.CurrentMap = map; Refs.controller.battleOverview.showing = false;
+				SoundDefOf.MapSelected.PlayOneShotOnCamera(null);
+			}
+
 			DrawBackground();
-			DrawMaps(new Rect(0, 0, UI.screenWidth, UI.screenHeight));
+			var config = new MiniMap.Configuration()
+			{
+				isCurrent = map => Find.CurrentMap == map,
+				isSelected = map => null,
+				canSelect = map => true,
+				setSelected = SetSelected,
+				canSelectMarkers = true
+			};
+			DrawMaps(new Rect(0, 0, UI.screenWidth, UI.screenHeight), true, config);
 		}
 
 		static void DrawBackground()
@@ -79,7 +95,7 @@ namespace RimBattle
 			Widgets.DrawBoxSolid(rect, new Color(0f, 0f, 0f, 0.6f));
 		}
 
-		public void DrawMaps(Rect baseRect, bool withMargins = true)
+		public void DrawMaps(Rect baseRect, bool withMargins, MiniMap.Configuration config)
 		{
 			var tabBarSize = withMargins ? tabBarHeight : 0;
 			var innerspace = 4;
@@ -122,7 +138,7 @@ namespace RimBattle
 				for (var col = 0; col < colCount; col++)
 				{
 					var x = midX - realWidth / 2 + col * dimPlusSpace;
-					minimaps[i++]?.Draw(new Rect(baseRect.x + x + oddRowOffset + rowOffset, baseRect.y + z, dim, dim));
+					minimaps[i++]?.Draw(new Rect(baseRect.x + x + oddRowOffset + rowOffset, baseRect.y + z, dim, dim), config);
 				}
 			}
 		}
