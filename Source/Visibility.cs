@@ -1,5 +1,4 @@
-﻿using Harmony;
-using Verse;
+﻿using Verse;
 
 namespace RimBattle
 {
