@@ -242,13 +242,12 @@ namespace RimBattle
 			return adjactedTiles[n];
 		}
 
-		// given indices to two adjacted tiles, return 0-5 as a counter-clockwise index (from right)
+		// convert angle index to basic directions
 		//
-		public static Quaternion GetTileIndexAngle(int idx1, int idx2)
+		public static void RowAndColumnFromIndex(int idx, out int row, out int col)
 		{
-			var angle = Refs.adjactedTileAngles[idx1][idx2] * 60f;
-			// Log.Warning($"{idx1} to {idx2} => {angle}");
-			return Quaternion.AngleAxis(angle, Vector3.up);
+			row = 0 + (idx == 4 || idx < 2 ? 1 : 0) + (idx > 4 ? 2 : 0);
+			col = 0 + (idx == 3 || idx == 5 ? 1 : 0) + (idx == 0 ? 2 : 0) + (idx == 2 || idx == 6 ? 3 : 0) + (idx == 1 ? 4 : 0);
 		}
 
 		// convert angle index to basic directions
@@ -280,29 +279,37 @@ namespace RimBattle
 		// get exit cells in groups that resemble half edges
 		// each group has their half edges ordered from the location towards a specific direction
 		//
-		public static IEnumerable<IEnumerable<IntVec3>> GetSortedHalfEdgeGroups(Map fromMap, IntVec3 location, Map toMap)
+		public static IEnumerable<IEnumerable<IntVec3>> GetSortedHalfEdgeGroups(Map fromMap, Map toMap, IntVec3 pawnsCenter)
 		{
-			Func<IEnumerable<IntVec3>, int> MinEdgeDistanceTo(IntVec3 pos)
-			{
-				return (cells) => cells.Min(cell => (cell - pos).LengthHorizontalSquared);
-			}
-
 			var controller = Refs.controller;
 			var fromIndex = controller.TileIndex(fromMap.Tile);
 			var toIndex = controller.TileIndex(toMap.Tile);
-			var angleRotation = GetTileIndexAngle(fromIndex, toIndex);
-			var center = location.IsValid ? location : fromMap.Center;
-			var vector = (angleRotation * new Vector3(fromMap.Size.x / 2, 0, 0)).ToIntVec3();
-			vector.z *= -1;
-			var destinationCenter = center + vector;
-			// Log.Warning($"center = {center} vector = {vector} => {destinationCenter}");
-			foreach (var halfEdge in GetHalfEdges(fromMap.Size.x).OrderBy(MinEdgeDistanceTo(destinationCenter)))
+
+			RowAndColumnFromIndex(fromIndex, out var rowFrom, out var colFrom);
+			RowAndColumnFromIndex(toIndex, out var rowTo, out var colTo);
+
+			var destination = fromMap.Center;
+			if (rowFrom == rowTo)
+				destination.x += colFrom < colTo ? fromMap.Size.x : -fromMap.Size.x;
+			else
+			{
+				destination.x += colFrom < colTo ? fromMap.Size.x / 2 : -fromMap.Size.x / 2;
+				destination.z += rowFrom < rowTo ? -fromMap.Size.x : fromMap.Size.x;
+			}
+
+			Func<IEnumerable<IntVec3>, int> MinEdgeDistanceTo(IntVec3 pos)
+			{
+				return (cells) => cells.Sum(cell => (cell - pos).LengthHorizontalSquared + (cell - pawnsCenter).LengthHorizontalSquared / 2);
+			}
+
+			// Log.Warning($"from {fromIndex} [{colFrom},{rowFrom}] to {toIndex} [{colTo},{rowTo}] our destination is {destination}");
+			foreach (var halfEdge in GetHalfEdges(fromMap.Size.x).OrderBy(MinEdgeDistanceTo(destination)))
 				yield return halfEdge;
 		}
 
 		// get a spot that is used to select a nearby cell in an edge group
 		//
-		public static IntVec3 GetEdgeSpot(IEnumerable<Pawn> pawns)
+		public static IntVec3 GetAverageCenter(IEnumerable<Pawn> pawns)
 		{
 			var map = pawns.First().Map;
 			var cell = map.Center;
@@ -322,18 +329,18 @@ namespace RimBattle
 		public static IntVec3 GetEnterSpot(int fromTile, int toTile, IntVec3 exitSpot)
 		{
 			var map = Refs.controller.MapForTile(toTile);
-			var fromIndex = Refs.controller.TileIndex(fromTile);
-			var toIndex = Refs.controller.TileIndex(toTile);
-			if (fromIndex > toIndex)
-				Gen.Swap(ref fromIndex, ref toIndex);
-			for (var i = 0; i < Refs.horrizontalTilePairs.Length; i += 2)
-				if (Refs.horrizontalTilePairs[i] == fromIndex)
-					if (Refs.horrizontalTilePairs[i + 1] == toIndex)
-					{
-						exitSpot.x = map.Size.x - exitSpot.x;
-						return exitSpot;
-					}
-			exitSpot.z = map.Size.z - exitSpot.z;
+
+			RowAndColumnFromIndex(Refs.controller.TileIndex(fromTile), out var rowFrom, out var colFrom);
+			RowAndColumnFromIndex(Refs.controller.TileIndex(toTile), out var rowTo, out var colTo);
+
+			if (rowFrom == rowTo)
+				exitSpot.x = map.Size.x - exitSpot.x;
+			else
+			{
+				exitSpot.x += colFrom < colTo ? -map.Center.x : map.Center.x;
+				exitSpot.z = map.Size.z - exitSpot.z;
+			}
+
 			return exitSpot;
 		}
 
@@ -343,7 +350,6 @@ namespace RimBattle
 		{
 			var fromMap = Refs.controller.MapForTile(fromTile);
 			var toMap = Refs.controller.MapForTile(toTile);
-			var location = nearSpot.IsValid ? nearSpot : GetEdgeSpot(pawns);
 
 			bool Validator(IntVec3 cell)
 			{
@@ -351,13 +357,24 @@ namespace RimBattle
 				return pawns.Any() == false || pawns.All(pawn => pawn.CanReach(cell, PathEndMode.Touch, Danger.Deadly, false, TraverseMode.ByPawn));
 			}
 
-			var i = 0;
-			foreach (var halfEdge in GetSortedHalfEdgeGroups(fromMap, location, toMap))
+			if (nearSpot.IsValid)
 			{
-				// Log.Warning($"Near {nearSpot} we got edge {i++} from {halfEdge.First()} to {halfEdge.Last()}");
-				var cells = halfEdge.Where(Validator);
+				var cells = new CellRect(0, 0, toMap.Size.x, toMap.Size.z).EdgeCells
+					.Where(Validator).OrderBy(cell => (cell - nearSpot).LengthHorizontalSquared);
+				// Log.Warning($"Near {nearSpot} we got {cells.Count()} cells, first={cells.FirstOrDefault()}");
 				if (cells.Any())
-					return cells.OrderBy(cell => (cell - location).LengthHorizontalSquared).First();
+					return cells.First();
+				return IntVec3.Invalid;
+			}
+
+			var location = GetAverageCenter(pawns);
+			var i = 0;
+			foreach (var halfEdge in GetSortedHalfEdgeGroups(fromMap, toMap, location))
+			{
+				var cells = halfEdge.Where(Validator).OrderBy(cell => (cell - location).LengthHorizontalSquared);
+				// Log.Warning($"For edge {i++} from {halfEdge.First()} to {halfEdge.Last()} we got {cells.Count()} cells, first={cells.FirstOrDefault()}");
+				if (cells.Any())
+					return cells.First();
 			}
 			return IntVec3.Invalid;
 		}

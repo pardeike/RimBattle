@@ -84,28 +84,17 @@ namespace RimBattle
 
 		// adjacted tile angles, 0-5 (9=not adjacted) as a counter-clockwise index (from right)
 		// for example (0,1) => 0 and (4,5) => 5
-		//
+		/*
 		public static readonly int[][] adjactedTileAngles = new int[][]
 		{
-			// r=0, tr=1, tl=2, l=3, bl=4, br=5
-
-			// from      to: c  r tr tl  l bl br
-			/*  c */ new[] { 9, 0, 1, 2, 3, 4, 5 },
-			/*  r */ new[] { 3, 9, 2, 9, 9, 9, 4 },
-			/* tr */ new[] { 4, 5, 9, 3, 9, 9, 9 },
-			/* tl */ new[] { 5, 9, 0, 9, 4, 9, 9 },
-			/*  l */ new[] { 0, 9, 9, 1, 9, 5, 9 },
-			/* bl */ new[] { 1, 9, 9, 9, 2, 9, 0 },
-			/* br */ new[] { 2, 1, 9, 9, 9, 3, 9 },
-		};
-
-		public static readonly int[] horrizontalTilePairs = new int[]
-		{
-			0, 1, // c-r
-			2, 3, // tl-tr
-			0, 4, // l-c
-			5, 6, // bl-br
-		};
+			new[] { 9, 0, 1, 2, 3, 4, 5 },
+			new[] { 3, 9, 2, 9, 9, 9, 4 },
+			new[] { 4, 5, 9, 3, 9, 9, 9 },
+			new[] { 5, 9, 0, 9, 4, 9, 9 },
+			new[] { 0, 9, 9, 1, 9, 5, 9 },
+			new[] { 1, 9, 9, 9, 2, 9, 0 },
+			new[] { 2, 1, 9, 9, 9, 3, 9 },
+		};*/
 
 		public static GameController controller;
 		public const int forceMapSize = 120;
