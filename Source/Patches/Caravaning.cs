@@ -204,6 +204,30 @@ namespace RimBattle
 		}
 	}
 
+	// no arrival message
+	//
+	[HarmonyPatch(typeof(CaravanArrivalAction_Enter))]
+	[HarmonyPatch(nameof(CaravanArrivalAction_Enter.Arrived))]
+	static class CaravanArrivalAction_Enter_Arrived_Patch
+	{
+		public static void ReceiveLetter_Empty(LetterStack stack, string label, string text, LetterDef textLetterDef, LookTargets lookTargets, Faction relatedFaction, string debugInfo)
+		{
+			_ = stack; _ = label; _ = text; _ = textLetterDef; _ = lookTargets; _ = relatedFaction; _ = debugInfo;
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(Instructions instructions)
+		{
+			var parameters = new[] { typeof(string), typeof(string), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(string) };
+			var m_ReceiveLetter = AccessTools.Method(typeof(LetterStack), nameof(LetterStack.ReceiveLetter), parameters);
+			if (m_ReceiveLetter == null)
+				Log.Error("Cannot find method for LetterStack.ReceiveLetter()");
+			var m_ReceiveLetter_Empty = SymbolExtensions.GetMethodInfo(() => ReceiveLetter_Empty(null, "", "", default, default, null, ""));
+
+			return instructions.MethodReplacer(m_ReceiveLetter, m_ReceiveLetter_Empty);
+		}
+	}
+
 	// preselect all selected pawns in the form caravan dialog
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
