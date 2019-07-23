@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 using Verse.AI.Group;
 
 namespace RimBattle
@@ -228,6 +229,46 @@ namespace RimBattle
 		}
 	}
 
+	// no packing spots? use group location instead
+	//
+	[HarmonyPatch(typeof(Dialog_FormCaravan))]
+	[HarmonyPatch("TryFormAndSendCaravan")]
+	static class Dialog_FormCaravan_TryFormAndSendCaravan_Patch
+	{
+		static MethodInfo m_TryFindRandomPackingSpot = AccessTools.Method(typeof(Dialog_FormCaravan), "TryFindRandomPackingSpot");
+
+		static bool TryFindRandomPackingSpotCloseBy(Dialog_FormCaravan dialog, IntVec3 exitSpot, out IntVec3 packingSpot)
+		{
+			var map = Refs.Dialog_FormCaravan_map(dialog);
+			var traverseParams = TraverseParms.For(TraverseMode.PassDoors, Danger.Deadly, false);
+			var packingSpots = map.listerThings.ThingsOfDef(ThingDefOf.CaravanPackingSpot)
+				.Where(spot => map.reachability.CanReach(exitSpot, spot, PathEndMode.OnCell, traverseParams));
+			if (packingSpots.Any())
+			{
+				var parameters = new object[] { exitSpot, default(IntVec3) };
+				var result = (bool)m_TryFindRandomPackingSpot.Invoke(dialog, parameters);
+				packingSpot = (IntVec3)parameters[1];
+				return result;
+			}
+
+			var pawnsFromTransferables = TransferableUtility.GetPawnsFromTransferables(dialog.transferables);
+			packingSpot = Tools.GetAverageCenter(pawnsFromTransferables);
+			return true;
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(Instructions instructions)
+		{
+			if (m_TryFindRandomPackingSpot == null)
+				Log.Error("Cannot find method for Dialog_FormCaravan.TryFindRandomPackingSpot()");
+
+			IntVec3 tmp;
+			var m_TryFindRandomPackingSpotCloseBy = SymbolExtensions.GetMethodInfo(() => TryFindRandomPackingSpotCloseBy(null, default, out tmp));
+
+			return instructions.MethodReplacer(m_TryFindRandomPackingSpot, m_TryFindRandomPackingSpotCloseBy);
+		}
+	}
+
 	// preselect all selected pawns in the form caravan dialog
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
@@ -246,7 +287,7 @@ namespace RimBattle
 					transferable.AdjustTo(transferable.GetMaximumToTransfer());
 			});
 
-			Refs.canChooseRoute(__instance) = true;
+			Refs.Dialog_FormCaravan_canChooseRoute(__instance) = true;
 			Refs.Dialog_FormCaravan_startingTile(__instance) = Find.CurrentMap.Tile;
 
 			var controller = Refs.controller;

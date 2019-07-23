@@ -108,7 +108,8 @@ namespace RimBattle
 		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
 		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
 		public static readonly FieldRef<TransferableOneWayWidget, List<object>> TransferableOneWayWidget_sections = FieldRefAccess<TransferableOneWayWidget, List<object>>("sections");
-		public static readonly FieldRef<Dialog_FormCaravan, bool> canChooseRoute = FieldRefAccess<Dialog_FormCaravan, bool>("canChooseRoute");
+		public static readonly FieldRef<Dialog_FormCaravan, bool> Dialog_FormCaravan_canChooseRoute = FieldRefAccess<Dialog_FormCaravan, bool>("canChooseRoute");
+		public static readonly FieldRef<Dialog_FormCaravan, Map> Dialog_FormCaravan_map = FieldRefAccess<Dialog_FormCaravan, Map>("map");
 		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_startingTile = FieldRefAccess<Dialog_FormCaravan, int>("startingTile");
 		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_destinationTile = FieldRefAccess<Dialog_FormCaravan, int>("destinationTile");
 		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_startingTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("startingTile");
