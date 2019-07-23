@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 using Verse.Profile;
 
 // NOTES
@@ -241,12 +242,132 @@ namespace RimBattle
 			return adjactedTiles[n];
 		}
 
+		// given indices to two adjacted tiles, return 0-5 as a counter-clockwise index (from right)
+		//
+		public static Quaternion GetTileIndexAngle(int idx1, int idx2)
+		{
+			var angle = Refs.adjactedTileAngles[idx1][idx2] * 60f;
+			// Log.Warning($"{idx1} to {idx2} => {angle}");
+			return Quaternion.AngleAxis(angle, Vector3.up);
+		}
+
+		// convert angle index to basic directions
+		//
+		public static Rot4 GetRo4Angle(int n)
+		{
+			if (n / 2 == 0)
+				return Rot4.East;
+			if (n / 2 == 1)
+				return Rot4.North;
+			if (n / 2 == 2)
+				return Rot4.West;
+			return Rot4.South;
+		}
+
+		// half edges divide each edge in the middle, resulting in 8 half edges
+		// they are ordered counter-clockwise from 3 o'clock
+		//
+		public static IEnumerable<IEnumerable<IntVec3>> GetHalfEdges(int len)
+		{
+			for (var n = 0; n < 8; n++)
+			{
+				var rot = GetRo4Angle(n);
+				var cells = new CellRect(0, 0, len, len).GetEdgeCells(rot);
+				yield return n % 2 == 0 ? cells.Skip(len / 2) : cells.Take(len / 2);
+			}
+		}
+
+		// get exit cells in groups that resemble half edges
+		// each group has their half edges ordered from the location towards a specific direction
+		//
+		public static IEnumerable<IEnumerable<IntVec3>> GetSortedHalfEdgeGroups(Map fromMap, IntVec3 location, Map toMap)
+		{
+			Func<IEnumerable<IntVec3>, int> MinEdgeDistanceTo(IntVec3 pos)
+			{
+				return (cells) => cells.Min(cell => (cell - pos).LengthHorizontalSquared);
+			}
+
+			var controller = Refs.controller;
+			var fromIndex = controller.TileIndex(fromMap.Tile);
+			var toIndex = controller.TileIndex(toMap.Tile);
+			var angleRotation = GetTileIndexAngle(fromIndex, toIndex);
+			var center = location.IsValid ? location : fromMap.Center;
+			var vector = (angleRotation * new Vector3(fromMap.Size.x / 2, 0, 0)).ToIntVec3();
+			vector.z *= -1;
+			var destinationCenter = center + vector;
+			// Log.Warning($"center = {center} vector = {vector} => {destinationCenter}");
+			foreach (var halfEdge in GetHalfEdges(fromMap.Size.x).OrderBy(MinEdgeDistanceTo(destinationCenter)))
+				yield return halfEdge;
+		}
+
+		// get a spot that is used to select a nearby cell in an edge group
+		//
+		public static IntVec3 GetEdgeSpot(IEnumerable<Pawn> pawns)
+		{
+			var map = pawns.First().Map;
+			var cell = map.Center;
+			if (pawns.Any())
+			{
+				cell = IntVec3.Zero;
+				foreach (var pawn in pawns)
+					cell += pawn.Position;
+				cell.x /= pawns.Count();
+				cell.z /= pawns.Count();
+			}
+			return cell;
+		}
+
+		// returns a flipped enter spot from an exit spot
+		//
+		public static IntVec3 GetEnterSpot(int fromTile, int toTile, IntVec3 exitSpot)
+		{
+			var map = Refs.controller.MapForTile(toTile);
+			var fromIndex = Refs.controller.TileIndex(fromTile);
+			var toIndex = Refs.controller.TileIndex(toTile);
+			if (fromIndex > toIndex)
+				Gen.Swap(ref fromIndex, ref toIndex);
+			for (var i = 0; i < Refs.horrizontalTilePairs.Length; i += 2)
+				if (Refs.horrizontalTilePairs[i] == fromIndex)
+					if (Refs.horrizontalTilePairs[i + 1] == toIndex)
+					{
+						exitSpot.x = map.Size.x - exitSpot.x;
+						return exitSpot;
+					}
+			exitSpot.z = map.Size.z - exitSpot.z;
+			return exitSpot;
+		}
+
+		// get a random exit spot on a map edge towards the destination
+		//
+		public static IntVec3 FindEdgeSpot(int fromTile, int toTile, IEnumerable<Pawn> pawns, IntVec3 nearSpot)
+		{
+			var fromMap = Refs.controller.MapForTile(fromTile);
+			var toMap = Refs.controller.MapForTile(toTile);
+			var location = nearSpot.IsValid ? nearSpot : GetEdgeSpot(pawns);
+
+			bool Validator(IntVec3 cell)
+			{
+				if (cell.Fogged(fromMap) || cell.Standable(fromMap) == false) return false;
+				return pawns.Any() == false || pawns.All(pawn => pawn.CanReach(cell, PathEndMode.Touch, Danger.Deadly, false, TraverseMode.ByPawn));
+			}
+
+			var i = 0;
+			foreach (var halfEdge in GetSortedHalfEdgeGroups(fromMap, location, toMap))
+			{
+				// Log.Warning($"Near {nearSpot} we got edge {i++} from {halfEdge.First()} to {halfEdge.Last()}");
+				var cells = halfEdge.Where(Validator);
+				if (cells.Any())
+					return cells.OrderBy(cell => (cell - location).LengthHorizontalSquared).First();
+			}
+			return IntVec3.Invalid;
+		}
+
 		// returns custom material reflecting if tile is valid
 		//
 		public static Material GetMouseTileMaterial(int baseTile, int tile)
 		{
 			if (baseTile == -1) return default;
-			var ok = Tools.CheckTiles(new int[] { baseTile, tile }, true);
+			var ok = CheckTiles(new int[] { baseTile, tile }, true);
 			return ok ? WorldMaterials.MouseTile : Refs.MouseTileError;
 		}
 
@@ -255,7 +376,7 @@ namespace RimBattle
 		public static Material GetSelectedTileMaterial(int baseTile, int tile)
 		{
 			if (baseTile == -1) return default;
-			var ok = Tools.CheckTiles(new int[] { baseTile, tile }, true);
+			var ok = CheckTiles(new int[] { baseTile, tile }, true);
 			return ok ? WorldMaterials.SelectedTile : Refs.SelectedTileError;
 		}
 
