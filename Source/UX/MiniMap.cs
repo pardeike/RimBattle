@@ -94,14 +94,16 @@ namespace RimBattle
 			var visibleGrid = map.GetComponent<MapPart>().visibility;
 			map.mapPawns.AllPawns.Do(pawn =>
 			{
-				if (pawn.RaceProps.Humanlike == false)
-					return;
-
 				if (pawn.Position.IsValid == false)
 					return;
 
+				if (pawn.RaceProps.Animal && pawn.Faction != Faction.OfPlayer)
+					return;
+				if (pawn.RaceProps.Humanlike == false && pawn.RaceProps.Animal == false)
+					return;
+
 				var cellIndex = map.cellIndices.CellToIndex(pawn.Position);
-				if (fogGrid.IsFogged(cellIndex) || visibleGrid.IsVisible(cellIndex) == false)
+				if (fogGrid.IsFogged(cellIndex) || visibleGrid.IsVisible(cellIndex) == false || Ref.controller.IsInVisibleRange(pawn) == false)
 					return;
 
 				var r = Marker(pawn);
@@ -112,7 +114,9 @@ namespace RimBattle
 
 				if (repainting)
 				{
-					var color = PawnNameColorUtility.PawnNameColorOf(pawn);
+					var team = colonist ? pawn.GetTeamID() : -1;
+					if (team == Ref.controller.team) team = -1;
+					var color = team >= 0 ? Statics.TeamColors[team] : (pawn.RaceProps.Animal ? Color.gray : PawnNameColorUtility.PawnNameColorOf(pawn));
 					color.a = canSelect || isCurrent ? 1f : 0.4f;
 					Widgets.DrawBoxSolid(r, color);
 					if (Find.Selector.IsSelected(pawn))
