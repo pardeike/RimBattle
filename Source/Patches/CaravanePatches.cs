@@ -77,14 +77,11 @@ namespace RimBattle
 
 	// make caravan exit map at the correct spot
 	//
-	[HarmonyPatch]
+	[HarmonyPatch(typeof(Dialog_FormCaravan))]
+	[HarmonyPatch("TryFindExitSpot")]
+	[HarmonyPatch(new[] { typeof(List<Pawn>), typeof(bool), typeof(IntVec3) }, new[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Out })]
 	static class Dialog_FormCaravan_TryFindExitSpot_Patch
 	{
-		static MethodBase TargetMethod()
-		{
-			return AccessTools.Method(typeof(Dialog_FormCaravan), "TryFindExitSpot", new[] { typeof(List<Pawn>), typeof(bool), typeof(IntVec3).MakeByRefType() });
-		}
-
 		[HarmonyPriority(10000)]
 		static bool Prefix(Dialog_FormCaravan __instance, ref bool __result, List<Pawn> pawns, bool reachableForEveryColonist, out IntVec3 spot)
 		{

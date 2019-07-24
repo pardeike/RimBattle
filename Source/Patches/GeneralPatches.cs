@@ -112,15 +112,11 @@ namespace RimBattle
 
 	// auto taming animals (not training)
 	//
-	[HarmonyPatch]
+	[HarmonyPatch(typeof(InteractionWorker_RecruitAttempt))]
+	[HarmonyPatch(nameof(InteractionWorker_RecruitAttempt.DoRecruit))]
+	[HarmonyPatch(new[] { typeof(Pawn), typeof(Pawn), typeof(float), typeof(string), typeof(string), typeof(bool), typeof(bool) }, new ArgumentType[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Out, ArgumentType.Out, ArgumentType.Normal, ArgumentType.Normal })]
 	static class InteractionWorker_RecruitAttempt_DoRecruit_Patch
 	{
-		static MethodBase TargetMethod()
-		{
-			var parameters = new[] { typeof(Pawn), typeof(Pawn), typeof(float), typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(bool), typeof(bool) };
-			return AccessTools.Method(typeof(InteractionWorker_RecruitAttempt), nameof(InteractionWorker_RecruitAttempt.DoRecruit), parameters);
-		}
-
 		[HarmonyPriority(10000)]
 		static void Prefix(ref float recruitChance)
 		{

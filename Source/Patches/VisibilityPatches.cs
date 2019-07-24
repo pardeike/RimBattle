@@ -354,27 +354,28 @@ namespace RimBattle
 	[HarmonyPatch(nameof(OverlayDrawer.DrawAllOverlays))]
 	static class OverlayDrawer_DrawAllOverlays_Patch
 	{
+		static bool IsVisible(Thing key)
+		{
+			return Tools.IsVisible(key.Map, key.Position);
+		}
+
 		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
-			Func<Thing, bool> IsVisible = (thing) => Tools.IsVisible(thing.Map, thing.Position);
+			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null));
+			var label = generator.DefineLabel();
 
-			foreach (var instruction in instructions)
+			var codes = instructions.ToList();
+			var idx1 = codes.FirstIndexOf(code => code.opcode == OpCodes.Stloc_2);
+			codes.InsertRange(idx1 + 1, new[]
 			{
-				yield return instruction;
-
-				if (instruction.opcode == OpCodes.Stloc_2 && IsVisible != null)
-				{
-					yield return new CodeInstruction(OpCodes.Ldnull);
-					yield return new CodeInstruction(OpCodes.Ldloc_2);
-					yield return new CodeInstruction(OpCodes.Call, IsVisible.Method);
-					var label = generator.DefineLabel();
-					yield return new CodeInstruction(OpCodes.Brtrue, label);
-					yield return new CodeInstruction(OpCodes.Ret);
-					yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
-					IsVisible = null;
-				}
-			}
+				new CodeInstruction(OpCodes.Ldloc_2),
+				new CodeInstruction(OpCodes.Call, m_IsVisible),
+				new CodeInstruction(OpCodes.Brfalse, label)
+			});
+			var idx2 = codes.FindLastIndex(code => code.opcode == OpCodes.Brtrue);
+			codes[idx2 - 2].labels.Add(label);
+			return codes.AsEnumerable();
 		}
 	}
 
