@@ -4,23 +4,14 @@ using Verse.Sound;
 
 namespace RimBattle
 {
-	[StaticConstructorOnStartup]
-	public static class RimBattleButtonDefOf
-	{
-		static RimBattleButtonDefOf()
-		{
-			DefDatabase<MainButtonDef>.Add(Refs.Battle);
-		}
-	}
-
-	public class MainButtonWorker_ToggleBattle : MainButtonWorker
+	public class ToggleBattle : MainButtonWorker
 	{
 		public static void Toggle()
 		{
 			if (Find.MainTabsRoot.OpenTab != null)
 				Find.MainTabsRoot.EscapeCurrentTab(false);
 
-			var battleOverview = Refs.controller.BattleOverview;
+			var battleOverview = Ref.controller.battleOverview;
 			battleOverview.showing = !battleOverview.showing;
 
 			if (battleOverview.showing)
@@ -34,6 +25,6 @@ namespace RimBattle
 			Toggle();
 		}
 
-		public override float ButtonBarPercent => Refs.controller.ProgressPercent;
+		public override float ButtonBarPercent => Ref.controller.ProgressPercent;
 	}
 }

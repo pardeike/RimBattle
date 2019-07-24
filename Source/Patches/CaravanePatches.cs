@@ -96,8 +96,8 @@ namespace RimBattle
 			}
 
 			// first try: use our method
-			var fromTile = Refs.Dialog_FormCaravan_startingTile(__instance);
-			var toTile = Refs.Dialog_FormCaravan_destinationTile(__instance);
+			var fromTile = Ref.Dialog_FormCaravan_startingTile(__instance);
+			var toTile = Ref.Dialog_FormCaravan_destinationTile(__instance);
 			var movingPawns = pawns.Where(pawn => pawn.IsColonist && pawn.Downed == false);
 			spot = Tools.FindEdgeSpot(fromTile, toTile, movingPawns, IntVec3.Invalid);
 			__result = spot.IsValid;
@@ -115,7 +115,7 @@ namespace RimBattle
 		static bool Prefix(Lord oldLord)
 		{
 			if (oldLord.loadID == int.MaxValue) return true;
-			return (oldLord.LordJob is LordJob_FormAndSendBattleCaravan) == false;
+			return (oldLord.LordJob is FormBattleCaravan) == false;
 		}
 	}
 
@@ -137,11 +137,11 @@ namespace RimBattle
 
 			var caravaningLord = Find.Maps
 				.SelectMany(map => map.lordManager.lords)
-				.FirstOrDefault(lord => (lord.LordJob as LordJob_FormAndSendBattleCaravan)?.pawns?.Contains(firstColonist) ?? false);
+				.FirstOrDefault(lord => (lord.LordJob as FormBattleCaravan)?.pawns?.Contains(firstColonist) ?? false);
 			if (caravaningLord == null)
 				return true;
 
-			var caravanJob = caravaningLord.LordJob as LordJob_FormAndSendBattleCaravan;
+			var caravanJob = caravaningLord.LordJob as FormBattleCaravan;
 			var enterSpot = Tools.GetEnterSpot(caravanJob.startingTile, caravanJob.destinationTile, caravanJob.exitSpot);
 
 			caravaningLord.loadID = int.MaxValue; // remove it by bypassing the prefix on RemoveLord
@@ -170,7 +170,7 @@ namespace RimBattle
 			if (c_LordJob_FormAndSendCaravan == null)
 				Log.Error("Cannot find constructor for LordJob_FormAndSendCaravan()");
 
-			var c_LordJob_FormAndSendBattleCaravan = AccessTools.Constructor(typeof(LordJob_FormAndSendBattleCaravan), parameters);
+			var c_LordJob_FormAndSendBattleCaravan = AccessTools.Constructor(typeof(FormBattleCaravan), parameters);
 			if (c_LordJob_FormAndSendBattleCaravan == null)
 				Log.Error("Cannot find constructor for c_LordJob_FormAndSendBattleCaravan()");
 
@@ -184,7 +184,7 @@ namespace RimBattle
 			{
 				new CodeInstruction(OpCodes.Ldloc_S, codes[idx + 1].operand),
 				new CodeInstruction(OpCodes.Ldarg_0),
-				new CodeInstruction(OpCodes.Call, SymbolExtensions.GetMethodInfo(() => new LordJob_FormAndSendBattleCaravan().SetPawns(null)))
+				new CodeInstruction(OpCodes.Call, SymbolExtensions.GetMethodInfo(() => new FormBattleCaravan().SetPawns(null)))
 			});
 			return codes.AsEnumerable();
 		}
@@ -235,11 +235,11 @@ namespace RimBattle
 	[HarmonyPatch("TryFormAndSendCaravan")]
 	static class Dialog_FormCaravan_TryFormAndSendCaravan_Patch
 	{
-		static MethodInfo m_TryFindRandomPackingSpot = AccessTools.Method(typeof(Dialog_FormCaravan), "TryFindRandomPackingSpot");
+		static readonly MethodInfo m_TryFindRandomPackingSpot = AccessTools.Method(typeof(Dialog_FormCaravan), "TryFindRandomPackingSpot");
 
 		static bool TryFindRandomPackingSpotCloseBy(Dialog_FormCaravan dialog, IntVec3 exitSpot, out IntVec3 packingSpot)
 		{
-			var map = Refs.Dialog_FormCaravan_map(dialog);
+			var map = Ref.Dialog_FormCaravan_map(dialog);
 			var traverseParams = TraverseParms.For(TraverseMode.PassDoors, Danger.Deadly, false);
 			var packingSpots = map.listerThings.ThingsOfDef(ThingDefOf.CaravanPackingSpot)
 				.Where(spot => map.reachability.CanReach(exitSpot, spot, PathEndMode.OnCell, traverseParams));
@@ -287,12 +287,12 @@ namespace RimBattle
 					transferable.AdjustTo(transferable.GetMaximumToTransfer());
 			});
 
-			Refs.Dialog_FormCaravan_canChooseRoute(__instance) = true;
-			Refs.Dialog_FormCaravan_startingTile(__instance) = Find.CurrentMap.Tile;
+			Ref.Dialog_FormCaravan_canChooseRoute(__instance) = true;
+			Ref.Dialog_FormCaravan_startingTile(__instance) = Find.CurrentMap.Tile;
 
-			var controller = Refs.controller;
+			var controller = Ref.controller;
 			var reachableTiles = controller.tiles.Where(tile => controller.CanReach(Find.CurrentMap.Tile, tile));
-			Refs.Dialog_FormCaravan_destinationTile(__instance) = reachableTiles.Count() == 1 ? reachableTiles.First() : -1;
+			Ref.Dialog_FormCaravan_destinationTile(__instance) = reachableTiles.Count() == 1 ? reachableTiles.First() : -1;
 		}
 	}
 
@@ -305,14 +305,14 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix(List<TransferableOneWay> transferables, out TransferableOneWayWidget pawnsTransfer, out TransferableOneWayWidget itemsTransfer, string thingCountTip, IgnorePawnsInventoryMode ignorePawnInventoryMass, Func<float> availableMassGetter, bool ignoreSpawnedCorpsesGearAndInventoryMass, int tile, bool playerPawnsReadOnly)
 		{
-			bool IsColonist(Thing thing) => thing is Pawn && ((Pawn)thing).IsFreeColonist && Refs.controller.IsMyColonist((Pawn)thing);
+			bool IsColonist(Thing thing) => thing is Pawn && ((Pawn)thing).IsFreeColonist && Ref.controller.InMyTeam((Pawn)thing);
 			bool IsPrisoner(Thing thing) => thing is Pawn && ((Pawn)thing).IsPrisoner;
 			bool IsCaptured(Thing thing) => thing is Pawn && ((Pawn)thing).Downed && CaravanUtility.ShouldAutoCapture((Pawn)thing, Faction.OfPlayer);
 			bool IsAnimal(Thing thing) => thing is Pawn && ((Pawn)thing).RaceProps.Animal; // TODO: add support for team animals
-			bool IsItem(Thing thing) => (thing is Pawn) == false && Refs.controller.IsVisible(thing);
+			bool IsItem(Thing thing) => (thing is Pawn) == false && Tools.IsVisible(thing);
 
 			pawnsTransfer = new TransferableOneWayWidget(transferables, null, null, thingCountTip, true, ignorePawnInventoryMass, false, availableMassGetter, 0f, ignoreSpawnedCorpsesGearAndInventoryMass, tile, true, false, false, true, false, true, playerPawnsReadOnly);
-			Refs.TransferableOneWayWidget_sections(pawnsTransfer).Clear();
+			Ref.TransferableOneWayWidget_sections(pawnsTransfer).Clear();
 			pawnsTransfer.AddSection("ColonistsSection".Translate(), transferables.Where(x => IsColonist(x.AnyThing)));
 			pawnsTransfer.AddSection("PrisonersSection".Translate(), transferables.Where(x => IsPrisoner(x.AnyThing)));
 			pawnsTransfer.AddSection("CaptureSection".Translate(), transferables.Where(x => IsCaptured(x.AnyThing)));
@@ -412,19 +412,19 @@ namespace RimBattle
 		{
 			Color? IsSelected(Map map)
 			{
-				if (map.Tile == Refs.Dialog_FormCaravan_destinationTile(__instance))
+				if (map.Tile == Ref.Dialog_FormCaravan_destinationTile(__instance))
 					return Color.green;
 				return null;
 			}
 
 			bool CanSelect(Map map)
 			{
-				return Refs.controller.CanReach(Find.CurrentMap, map);
+				return Ref.controller.CanReach(Find.CurrentMap, map);
 			}
 
 			void SetSelected(Map map)
 			{
-				Refs.Dialog_FormCaravan_destinationTile(__instance) = map.Tile;
+				Ref.Dialog_FormCaravan_destinationTile(__instance) = map.Tile;
 			}
 
 			var mapHeight = Dialog_FormCaravan_DoWindowContents_Patch.miniMapDialogHeight;
@@ -445,7 +445,7 @@ namespace RimBattle
 				setSelected = SetSelected,
 				canSelectMarkers = false
 			};
-			Refs.controller.BattleOverview.DrawMaps(mapRect, false, config);
+			Ref.controller.battleOverview.DrawMaps(mapRect, false, config);
 		}
 
 		static bool ButtonTextReordered(Rect rect, string label, bool drawBackground, bool doMouseoverSound, bool active)

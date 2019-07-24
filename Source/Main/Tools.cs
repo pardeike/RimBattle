@@ -1,7 +1,9 @@
-﻿using RimWorld;
+﻿using Harmony;
+using RimWorld;
 using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -9,29 +11,27 @@ using Verse;
 using Verse.AI;
 using Verse.Profile;
 
-// NOTES
-//
-// IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
+// TODO: IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
 
 namespace RimBattle
 {
 	static class Tools
 	{
-		// reload new colonists
+		// recreate new colonists
 		//
-		public static void RecreateNewColonists(bool clear)
+		public static void AddNewColonistsToTeam(Team team)
 		{
-			Find.GameInitData.startingAndOptionalPawns.Clear();
-			if (clear)
-				return;
-
 			var count = Math.Max(1, Find.Scenario.AllParts
 				.OfType<ScenPart_ConfigPage_ConfigureStartingPawns>()
 				.Select(scenPart => scenPart.pawnCount)
 				.FirstOrDefault());
 
 			for (var i = 0; i < count; i++)
-				Find.GameInitData.startingAndOptionalPawns.Add(StartingPawnUtility.NewGeneratedStartingPawn());
+			{
+				var pawn = StartingPawnUtility.NewGeneratedStartingPawn();
+				team.Add(pawn);
+				Find.GameInitData.startingAndOptionalPawns.Add(pawn);
+			}
 		}
 
 		// create a settlement
@@ -65,8 +65,8 @@ namespace RimBattle
 				Log.Error("Called InitNewGame() but init data is null. Create it first.", false);
 				return;
 			}
-			if (Refs.forceMapSize > 0)
-				game.InitData.mapSize = Refs.forceMapSize;
+			if (Statics.forceMapSize > 0)
+				game.InitData.mapSize = Statics.forceMapSize;
 
 			MemoryUtility.UnloadUnusedUnityAssets();
 			DeepProfiler.Start("InitNewGame");
@@ -74,6 +74,7 @@ namespace RimBattle
 			{
 				Current.ProgramState = ProgramState.MapInitializing;
 
+				Ref.controller.mapSize = game.InitData.mapSize;
 				var mapSize = new IntVec3(game.InitData.mapSize, 1, game.InitData.mapSize);
 				game.World.info.initialMapSize = mapSize;
 				if (game.InitData.permadeath)
@@ -84,44 +85,46 @@ namespace RimBattle
 
 				game.tickManager.gameStartAbsTick = GenTicks.ConfiguredTicksAbsAtGameStart;
 
-				var allTiles = Refs.controller.tiles;
-				var allTileIndices = TeamTiles(GameController.tileCount, GameController.tileCount);
-				var teamTileIndices = TeamTiles(GameController.tileCount, GameController.teamCount);
+				var arrivalMethod = Find.Scenario.AllParts.OfType<ScenPart_PlayerPawnsArriveMethod>().First();
+				Traverse.Create(arrivalMethod).Field("method").SetValue(PlayerPawnsArriveMethod.Standing);
+
+				var allTiles = Ref.controller.tiles;
+				var allTileIndices = TeamTiles(Ref.controller.tileCount, Ref.controller.tileCount);
+				var teamTileIndices = TeamTiles(Ref.controller.tileCount, Ref.controller.teamCount);
 				for (var i = 0; i < allTiles.Count; i++)
 				{
 					var tile = allTiles[i];
 					var tileIndex = allTileIndices[i];
 					var hasTeam = teamTileIndices.Contains(tileIndex);
-					RecreateNewColonists(hasTeam == false);
+
+					Find.GameInitData.startingAndOptionalPawns.Clear();
+					Team team = null;
+					if (hasTeam)
+					{
+						team = Ref.controller.CreateTeam();
+						AddNewColonistsToTeam(team);
+					}
+
 					var settlement = CreateSettlement(tile);
 					var map = MapGenerator.GenerateMap(mapSize, settlement, settlement.MapGeneratorDef, settlement.ExtraGenStepDefs, null);
 					PawnUtility.GiveAllStartingPlayerPawnsThought(ThoughtDefOf.NewColonyOptimism);
-					if (hasTeam)
-						Team.CreateWithColonists();
-					Refs.controller.CreateMapPart(map);
+
+					Ref.controller.CreateMapPart(map);
+					if (i == 0)
+						Current.Game.CurrentMap = map;
 				}
 
 				game.FinalizeInit();
-
-				Current.Game.CurrentMap = Refs.controller.MapForTile(0);
 
 				Find.CameraDriver.JumpToCurrentMapLoc(MapGenerator.PlayerStartSpot);
 				Find.CameraDriver.ResetSize();
 				Find.Scenario.PostGameStart();
 
 				if (Faction.OfPlayer.def.startingResearchTags != null)
-				{
 					foreach (var tag in Faction.OfPlayer.def.startingResearchTags)
-					{
 						foreach (var researchProjectDef in DefDatabase<ResearchProjectDef>.AllDefs)
-						{
 							if (researchProjectDef.HasTag(tag))
-							{
 								game.researchManager.FinishProject(researchProjectDef, false, null);
-							}
-						}
-					}
-				}
 
 				GameComponentUtility.StartedNewGame();
 				game.InitData = null;
@@ -203,15 +206,23 @@ namespace RimBattle
 		//
 		public static int[] TilePattern()
 		{
-			var n = GameController.tileCount;
-			return Refs.teamTiles[n - 1][n - 2];
+			var n = Ref.controller.tileCount;
+			return Statics.teamTiles[n - 1][n - 2];
+		}
+
+		// returns a map for a tile number
+		// TODO: does this exist in vanilla?
+		//
+		public static Map MapForTile(int tile)
+		{
+			return Find.Maps.First(map => map.Tile == tile);
 		}
 
 		// returns a specific constellation form number of maps and teams
 		//
 		public static int[] TeamTiles(int tileCount, int teamCount)
 		{
-			return Refs.teamTiles[tileCount - 1][teamCount - 2];
+			return Statics.teamTiles[tileCount - 1][teamCount - 2];
 		}
 
 		// validates several tiles at once
@@ -236,7 +247,6 @@ namespace RimBattle
 		public static int GetAdjactedTile(int baseTile, int n)
 		{
 			if (baseTile == -1) return -1;
-			if (Current.Game != null && n > 0) return -1;
 			var adjactedTiles = CalculateTiles(baseTile);
 			if (n < 0 || n >= adjactedTiles.Length) return -1;
 			return adjactedTiles[n];
@@ -281,7 +291,7 @@ namespace RimBattle
 		//
 		public static IEnumerable<IEnumerable<IntVec3>> GetSortedHalfEdgeGroups(Map fromMap, Map toMap, IntVec3 pawnsCenter)
 		{
-			var controller = Refs.controller;
+			var controller = Ref.controller;
 			var fromIndex = controller.TileIndex(fromMap.Tile);
 			var toIndex = controller.TileIndex(toMap.Tile);
 
@@ -302,7 +312,6 @@ namespace RimBattle
 				return (cells) => cells.Sum(cell => (cell - pos).LengthHorizontalSquared + (cell - pawnsCenter).LengthHorizontalSquared / 2);
 			}
 
-			// Log.Warning($"from {fromIndex} [{colFrom},{rowFrom}] to {toIndex} [{colTo},{rowTo}] our destination is {destination}");
 			foreach (var halfEdge in GetHalfEdges(fromMap.Size.x).OrderBy(MinEdgeDistanceTo(destination)))
 				yield return halfEdge;
 		}
@@ -328,10 +337,10 @@ namespace RimBattle
 		//
 		public static IntVec3 GetEnterSpot(int fromTile, int toTile, IntVec3 exitSpot)
 		{
-			var map = Refs.controller.MapForTile(toTile);
+			var map = MapForTile(toTile);
 
-			RowAndColumnFromIndex(Refs.controller.TileIndex(fromTile), out var rowFrom, out var colFrom);
-			RowAndColumnFromIndex(Refs.controller.TileIndex(toTile), out var rowTo, out var colTo);
+			RowAndColumnFromIndex(Ref.controller.TileIndex(fromTile), out var rowFrom, out var colFrom);
+			RowAndColumnFromIndex(Ref.controller.TileIndex(toTile), out var rowTo, out var colTo);
 
 			if (rowFrom == rowTo)
 				exitSpot.x = map.Size.x - exitSpot.x;
@@ -348,8 +357,8 @@ namespace RimBattle
 		//
 		public static IntVec3 FindEdgeSpot(int fromTile, int toTile, IEnumerable<Pawn> pawns, IntVec3 nearSpot)
 		{
-			var fromMap = Refs.controller.MapForTile(fromTile);
-			var toMap = Refs.controller.MapForTile(toTile);
+			var fromMap = MapForTile(fromTile);
+			var toMap = MapForTile(toTile);
 
 			bool Validator(IntVec3 cell)
 			{
@@ -361,18 +370,15 @@ namespace RimBattle
 			{
 				var cells = new CellRect(0, 0, toMap.Size.x, toMap.Size.z).EdgeCells
 					.Where(Validator).OrderBy(cell => (cell - nearSpot).LengthHorizontalSquared);
-				// Log.Warning($"Near {nearSpot} we got {cells.Count()} cells, first={cells.FirstOrDefault()}");
 				if (cells.Any())
 					return cells.First();
 				return IntVec3.Invalid;
 			}
 
 			var location = GetAverageCenter(pawns);
-			var i = 0;
 			foreach (var halfEdge in GetSortedHalfEdgeGroups(fromMap, toMap, location))
 			{
 				var cells = halfEdge.Where(Validator).OrderBy(cell => (cell - location).LengthHorizontalSquared);
-				// Log.Warning($"For edge {i++} from {halfEdge.First()} to {halfEdge.Last()} we got {cells.Count()} cells, first={cells.FirstOrDefault()}");
 				if (cells.Any())
 					return cells.First();
 			}
@@ -385,7 +391,7 @@ namespace RimBattle
 		{
 			if (baseTile == -1) return default;
 			var ok = CheckTiles(new int[] { baseTile, tile }, true);
-			return ok ? WorldMaterials.MouseTile : Refs.MouseTileError;
+			return ok ? WorldMaterials.MouseTile : Statics.MouseTileError;
 		}
 
 		// returns custom material reflecting if tile is valid
@@ -394,25 +400,66 @@ namespace RimBattle
 		{
 			if (baseTile == -1) return default;
 			var ok = CheckTiles(new int[] { baseTile, tile }, true);
-			return ok ? WorldMaterials.SelectedTile : Refs.SelectedTileError;
+			return ok ? WorldMaterials.SelectedTile : Statics.SelectedTileError;
+		}
+
+		// create and add a team master to the world
+		//
+		public static Pawn CreateTeamMaster()
+		{
+			var master = StartingPawnUtility.NewGeneratedStartingPawn();
+			master.health.SetDead();
+			master.playerSettings.displayOrder = 1000 + Ref.controller.teams.Count;
+			Find.WorldPawns.PassToWorld(master, PawnDiscardDecideMode.KeepForever);
+			return master;
 		}
 
 		// get team id of a colonist
 		//
 		public static int GetTeamID(this Pawn pawn)
 		{
-			if (Refs.teamMemberCache.TryGetValue(pawn, out var team))
-				return team.id;
-			return -1;
+			if (pawn == null || pawn.playerSettings == null) return -1;
+			var master = Ref.master(pawn.playerSettings);
+			if (master == null) return -1;
+			var teamIdOfRealMaster = master.GetTeamID();
+			if (teamIdOfRealMaster >= 0)
+				return teamIdOfRealMaster;
+			return master.playerSettings.displayOrder - 1000;
 		}
 
-		// get team of a colonist
+		// update our visibility grid
 		//
-		public static Team GetTeam(this Pawn pawn)
+		public static void UpdateVisibility(Thing thing, IntVec3 pos)
 		{
-			if (Refs.teamMemberCache.TryGetValue(pawn, out var team))
-				return team;
-			return null;
+			var pawn = thing as Pawn;
+			if (pawn == null) return;
+			var map = pawn.Map;
+			if (map == null) return;
+			if (pawn.Faction != Faction.OfPlayer) return;
+
+			var controller = Ref.controller;
+			if (controller.InMyTeam(pawn))
+			{
+				var visibility = map.GetComponent<MapPart>().visibility;
+				map.DoInCircle(pos, pawn.WeaponRange(), visibility.MakeVisible);
+				var radius = (int)Math.Ceiling(pawn.WeaponRange());
+				map.MapMeshDirtyRect(pos.x - radius, pos.z - radius, pos.x + radius, pos.z + radius);
+			}
+		}
+
+		// check our visibility grid using a cell
+		//
+		public static bool IsVisible(Map map, IntVec3 loc)
+		{
+			if (map == null) return false;
+			return map.GetComponent<MapPart>().visibility.IsVisible(loc);
+		}
+
+		// check our visibility grid for a pawn
+		//
+		public static bool IsVisible(Thing pawn)
+		{
+			return IsVisible(pawn.Map, pawn.Position);
 		}
 
 		// get weapon range or default for no weapon
@@ -424,8 +471,25 @@ namespace RimBattle
 			if (verb != null && verb.verbProps.IsMeleeAttack == false)
 				range = Math.Min(90f, verb.verbProps.range);
 			else
-				range = Refs.defaultVisibleRange;
+				range = Statics.defaultVisibleRange;
 			return squared ? range * range : range;
+		}
+
+		// efficiently replace MapDrawer.MapMeshDirty with a rectangular algorithm
+		// optimized to death, lets hope for the best
+		//
+		public static void MapMeshDirtyRect(this Map map, int xMin, int zMin, int xMax, int zMax)
+		{
+			var len = map.Size.x;
+			if (xMin < 1) xMin = 1;
+			if (zMin < 1) zMin = 1;
+			if (xMax > len - 2) xMax = len - 2;
+			if (zMax > len - 2) zMax = len - 2;
+
+			var sectionsRef = Ref.sections(map.mapDrawer);
+			for (var x = (xMin - 1) / 17; x <= (xMax + 1) / 17; x++)
+				for (var z = (zMin - 1) / 17; z <= (zMax + 1) / 17; z++)
+					sectionsRef[x, z].dirtyFlags |= MapMeshFlag.FogOfWar;
 		}
 
 		// test if an object is selectable (vanilla only allows Thing and Zone)
@@ -435,9 +499,9 @@ namespace RimBattle
 			if (obj == null)
 				return false;
 
-			var controller = Refs.controller;
+			var controller = Ref.controller;
 			if (obj is Zone zone)
-				return zone.cells.Any(cell => controller.IsVisible(zone.Map, cell));
+				return zone.cells.Any(cell => Tools.IsVisible(zone.Map, cell));
 
 			var thing = obj as Thing;
 			if (thing == null)
@@ -449,10 +513,10 @@ namespace RimBattle
 			if (thing.def.size.x != 1 || thing.def.size.z != 1)
 			{
 				var map = thing.Map;
-				return thing.OccupiedRect().Cells.Any(cell => controller.IsVisible(map, cell));
+				return thing.OccupiedRect().Cells.Any(cell => Tools.IsVisible(map, cell));
 			}
 
-			if (controller.IsVisible(thing) == false)
+			if (Tools.IsVisible(thing) == false)
 				return false;
 
 			var pawn = thing as Pawn;
@@ -477,7 +541,7 @@ namespace RimBattle
 		//
 		private static IEnumerable<IntVec3> GetCircleVectors(float radius)
 		{
-			if (Refs.circleCache.TryGetValue(radius, out var cells) == false)
+			if (Statics.circleCache.TryGetValue(radius, out var cells) == false)
 			{
 				cells = new HashSet<IntVec3>();
 				var enumerator = GenRadial.RadialPatternInRadius(radius).GetEnumerator();
@@ -490,7 +554,7 @@ namespace RimBattle
 					cells.Add(new IntVec3(v.x, 0, -v.z));
 				}
 				enumerator.Dispose();
-				Refs.circleCache[radius] = cells;
+				Statics.circleCache[radius] = cells;
 			}
 			return cells;
 		}
@@ -506,13 +570,14 @@ namespace RimBattle
 
 		// execute a callback for each cell in a circle
 		//
-		public static void DoInCircle(this Map map, IntVec3 center, float radius, Action<IntVec3> callback)
+		public static void DoInCircle(this Map map, IntVec3 center, float radius, Action<int, int> callback)
 		{
+			var len = map.Size.x;
 			foreach (var vec in GetCircleVectors(radius))
 			{
 				var pos = center + vec;
-				if (pos.InBounds(map))
-					callback(pos);
+				if (pos.x >= 0 && pos.z < len && pos.z >= 0 && pos.z < len)
+					callback(pos.x, pos.z);
 			}
 		}
 
@@ -537,6 +602,59 @@ namespace RimBattle
 				tutorTag = "FormCaravan",
 				action = delegate () { Find.WindowStack.Add(new Dialog_FormCaravan(Find.CurrentMap, false, null, false)); }
 			});
+		}
+
+		public static byte[] PackBoolsInByteArray(bool[] bools)
+		{
+			var len = bools.Length;
+			var bytes = len >> 3;
+			if ((len & 0x07) != 0) ++bytes;
+			var result = new byte[bytes + 4];
+			var lenBytes = BitConverter.GetBytes(len);
+			Array.Copy(lenBytes, result, 4);
+			for (var i = 0; i < bools.Length; i++)
+				if (bools[i])
+					result[4 + i >> 3] |= (byte)(1 << (i & 0x07));
+			return result;
+		}
+
+		public static bool[] UnpackByteArrayInBools(byte[] bytes)
+		{
+			var len = BitConverter.ToInt32(bytes, 0);
+			var result = new bool[len];
+
+			return result;
+		}
+
+		// read bytes from file
+		//
+		public static byte[] LoadFile(string name, Func<byte[]> defaultValue)
+		{
+			var path = "-";
+			try
+			{
+				var folder = Path.Combine(GenFilePaths.ConfigFolderPath, "RimBattle");
+				Directory.CreateDirectory(folder);
+				path = Path.Combine(folder, $"{name}.dat");
+				return File.ReadAllBytes(path);
+			}
+#pragma warning disable CA1031
+			catch (Exception e)
+			{
+				Log.Error($"Exception loading visibility file {path}: {e}");
+				return defaultValue();
+			}
+#pragma warning restore CA1031
+		}
+
+		// save bytes to file
+		//
+		public static void SaveFile(string name, byte[] data)
+		{
+			var folder = Path.Combine(GenFilePaths.ConfigFolderPath, "RimBattle");
+			Directory.CreateDirectory(folder);
+			var path = Path.Combine(folder, $"{name}.dat");
+			File.WriteAllBytes(path, data);
 		}
 	}
 }

@@ -6,8 +6,51 @@ using static Harmony.AccessTools;
 
 namespace RimBattle
 {
+	static class Ref
+	{
+		public static GameController controller;
+
+		public static readonly FieldRef<Pawn_PlayerSettings, Pawn> master = FieldRefAccess<Pawn_PlayerSettings, Pawn>("master");
+		public static readonly FieldRef<SectionLayer, Section> SectionLayer_section = FieldRefAccess<SectionLayer, Section>("section");
+		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
+		public static readonly FieldRef<MapDrawer, Section[,]> sections = FieldRefAccess<MapDrawer, Section[,]>("sections");
+		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
+		public static readonly FieldRef<TransferableOneWayWidget, List<object>> TransferableOneWayWidget_sections = FieldRefAccess<TransferableOneWayWidget, List<object>>("sections");
+		public static readonly FieldRef<Dialog_FormCaravan, bool> Dialog_FormCaravan_canChooseRoute = FieldRefAccess<Dialog_FormCaravan, bool>("canChooseRoute");
+		public static readonly FieldRef<Dialog_FormCaravan, Map> Dialog_FormCaravan_map = FieldRefAccess<Dialog_FormCaravan, Map>("map");
+		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_startingTile = FieldRefAccess<Dialog_FormCaravan, int>("startingTile");
+		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_destinationTile = FieldRefAccess<Dialog_FormCaravan, int>("destinationTile");
+		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_startingTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("startingTile");
+		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_destinationTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("destinationTile");
+		public static readonly FieldRef<LordJob_FormAndSendCaravan, IntVec3> LordJob_FormAndSendCaravan_exitSpot = FieldRefAccess<LordJob_FormAndSendCaravan, IntVec3>("exitSpot");
+	}
+
+	static class Defs
+	{
+		public static readonly KeyBindingDef BattleMap = new KeyBindingDef()
+		{
+			label = "Toggle battle map tab",
+			defName = "MainTab_Battle",
+			category = KeyBindingCategoryDefOf.MainTabs,
+			defaultKeyCodeA = KeyCode.Tab,
+			defaultKeyCodeB = KeyCode.BackQuote,
+			modContentPack = MainButtonDefOf.Architect.modContentPack
+		};
+
+		public static readonly MainButtonDef Battle = new MainButtonDef()
+		{
+			defName = "Battle",
+			label = "battle",
+			description = "Shows the main battle overview with its 7 maps and possible spawns.",
+			workerClass = typeof(ToggleBattle),
+			order = 100,
+			defaultHotKey = KeyCode.F12,
+			validWithoutMap = true
+		};
+	}
+
 	[StaticConstructorOnStartup]
-	static class Refs
+	static class Statics
 	{
 		// ---#3#-#2#---
 		// -#4#-#0#-#1#-
@@ -82,39 +125,11 @@ namespace RimBattle
 			new[] { 0, 1, 5 },
 		};
 
-		// adjacted tile angles, 0-5 (9=not adjacted) as a counter-clockwise index (from right)
-		// for example (0,1) => 0 and (4,5) => 5
-		/*
-		public static readonly int[][] adjactedTileAngles = new int[][]
-		{
-			new[] { 9, 0, 1, 2, 3, 4, 5 },
-			new[] { 3, 9, 2, 9, 9, 9, 4 },
-			new[] { 4, 5, 9, 3, 9, 9, 9 },
-			new[] { 5, 9, 0, 9, 4, 9, 9 },
-			new[] { 0, 9, 9, 1, 9, 5, 9 },
-			new[] { 1, 9, 9, 9, 2, 9, 0 },
-			new[] { 2, 1, 9, 9, 9, 3, 9 },
-		};*/
-
-		public static GameController controller;
 		public const int forceMapSize = 120;
 		public const int startTickets = 100;
 
 		public const int defaultVisibleRange = 6;
 		public static readonly Dictionary<float, HashSet<IntVec3>> circleCache = new Dictionary<float, HashSet<IntVec3>>();
-		public static readonly Dictionary<Pawn, Team> teamMemberCache = new Dictionary<Pawn, Team>();
-
-		public static readonly FieldRef<SectionLayer, Section> SectionLayer_section = FieldRefAccess<SectionLayer, Section>("section");
-		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
-		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
-		public static readonly FieldRef<TransferableOneWayWidget, List<object>> TransferableOneWayWidget_sections = FieldRefAccess<TransferableOneWayWidget, List<object>>("sections");
-		public static readonly FieldRef<Dialog_FormCaravan, bool> Dialog_FormCaravan_canChooseRoute = FieldRefAccess<Dialog_FormCaravan, bool>("canChooseRoute");
-		public static readonly FieldRef<Dialog_FormCaravan, Map> Dialog_FormCaravan_map = FieldRefAccess<Dialog_FormCaravan, Map>("map");
-		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_startingTile = FieldRefAccess<Dialog_FormCaravan, int>("startingTile");
-		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_destinationTile = FieldRefAccess<Dialog_FormCaravan, int>("destinationTile");
-		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_startingTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("startingTile");
-		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_destinationTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("destinationTile");
-		public static readonly FieldRef<LordJob_FormAndSendCaravan, IntVec3> LordJob_FormAndSendCaravan_exitSpot = FieldRefAccess<LordJob_FormAndSendCaravan, IntVec3>("exitSpot");
 
 		public static readonly string[] tileNames = new string[] { "Center", "Right", "TopRight", "TopLeft", "Left", "BottomLeft", "BottomRight" };
 
@@ -133,29 +148,19 @@ namespace RimBattle
 		public static readonly Material BadgeShadow = MaterialPool.MatFrom("Badges/Shadow", ShaderDatabase.MetaOverlay);
 		public static readonly Texture2D[] Configs = Tools.GetTextures("Tiles/Config#", 1, 7);
 		public static readonly Texture2D[] Teams = Tools.GetTextures("Tiles/Team#", 1, 7);
-
-		public static readonly MainButtonDef Battle = new MainButtonDef()
-		{
-			defName = "Battle",
-			label = "battle",
-			description = "Shows the main battle overview with its 7 maps and possible spawns.",
-			workerClass = typeof(MainButtonWorker_ToggleBattle),
-			order = 100,
-			defaultHotKey = KeyCode.F12,
-			validWithoutMap = true
-		};
-	}
-
-	static class Keys
-	{
-		public static readonly KeyBindingDef BattleMap = new KeyBindingDef()
-		{
-			label = "Toggle battle map tab",
-			defName = "MainTab_Battle",
-			category = KeyBindingCategoryDefOf.MainTabs,
-			defaultKeyCodeA = KeyCode.Tab,
-			defaultKeyCodeB = KeyCode.BackQuote,
-			modContentPack = MainButtonDefOf.Architect.modContentPack
-		};
 	}
 }
+
+// adjacted tile angles, 0-5 (9=not adjacted) as a counter-clockwise index (from right)
+// for example (0,1) => 0 and (4,5) => 5
+/*
+public static readonly int[][] adjactedTileAngles = new int[][]
+{
+	new[] { 9, 0, 1, 2, 3, 4, 5 },
+	new[] { 3, 9, 2, 9, 9, 9, 4 },
+	new[] { 4, 5, 9, 3, 9, 9, 9 },
+	new[] { 5, 9, 0, 9, 4, 9, 9 },
+	new[] { 0, 9, 9, 1, 9, 5, 9 },
+	new[] { 1, 9, 9, 9, 2, 9, 0 },
+	new[] { 2, 1, 9, 9, 9, 3, 9 },
+};*/

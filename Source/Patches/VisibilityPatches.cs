@@ -20,20 +20,37 @@ namespace RimBattle
 	static class Thing_Position_Patch
 	{
 		[HarmonyPriority(10000)]
-		static void Prefix(Thing __instance, IntVec3 value)
+		static void Prefix(Thing __instance, IntVec3 value, IntVec3 ___positionInt)
 		{
-			var pawn = __instance as Pawn;
-			if (pawn == null) return;
-			var map = pawn.Map;
-			if (map == null) return;
-			if (pawn.Position == value) return;
-			if (pawn.Faction != Faction.OfPlayer) return;
+			if (___positionInt == value) return;
+			Tools.UpdateVisibility(__instance, value);
+		}
+	}
 
-			// TODO: if this is too slow, make a co-routine and queue work to it
-			var controller = Refs.controller;
-			if (controller.IsMyColonist(pawn))
-				if (controller.mapParts.TryGetValue(map, out var mapPart))
-					map.DoInCircle(value, pawn.WeaponRange(), mapPart.visibility.MakeVisible);
+	// uncover map when colonist is placed
+	//
+	[HarmonyPatch(typeof(Thing))]
+	[HarmonyPatch(nameof(Thing.SetPositionDirect))]
+	static class Thing_SetPositionDirect_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Prefix(Thing __instance, IntVec3 newPos, IntVec3 ___positionInt)
+		{
+			if (___positionInt == newPos) return;
+			Tools.UpdateVisibility(__instance, newPos);
+		}
+	}
+
+	// uncover map when colonist is placed
+	//
+	[HarmonyPatch(typeof(Pawn_DraftController))]
+	[HarmonyPatch("Notify_PrimaryWeaponChanged")]
+	static class MapPawns_RegisterPawn_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(Pawn ___pawn)
+		{
+			Tools.UpdateVisibility(___pawn, ___pawn.Position);
 		}
 	}
 
@@ -52,7 +69,7 @@ namespace RimBattle
 			if (___pawn.Faction != Faction.OfPlayer) return true;
 			var map = ___pawn.Map;
 			if (map == null) return true;
-			__state = Refs.controller.IsInWeaponRange(___pawn);
+			__state = Ref.controller.IsInWeaponRange(___pawn);
 			return __state;
 		}
 
@@ -62,14 +79,14 @@ namespace RimBattle
 			if (__state == false)
 				return;
 
-			var team = Refs.controller.TeamForPawn(___pawn);
-			if (team == null || team.id == Refs.controller.team) return;
+			var team = ___pawn.GetTeamID();
+			if (team < 0 || Ref.controller.IsMyTeam(team)) return;
 
 			var pos = ___pawn.DrawPos + new Vector3(0.3f, 0.2f, -0.3f);
 			var matrix = default(Matrix4x4);
 			matrix.SetTRS(pos, Quaternion.identity, new Vector3(0.5f, 1f, 0.5f));
-			Graphics.DrawMesh(MeshPool.plane10, matrix, Refs.BadgeShadow, 0);
-			Graphics.DrawMesh(MeshPool.plane10, matrix, Refs.Badges[team.id], 0);
+			Graphics.DrawMesh(MeshPool.plane10, matrix, Statics.BadgeShadow, 0);
+			Graphics.DrawMesh(MeshPool.plane10, matrix, Statics.Badges[team], 0);
 		}
 	}
 
@@ -86,7 +103,7 @@ namespace RimBattle
 			var action2 = toil.preTickActions[last2];
 			toil.preTickActions[last2] = delegate
 			{
-				if (toil.actor.Faction != Faction.OfPlayer || Refs.controller.IsInWeaponRange(toil.actor))
+				if (toil.actor.Faction != Faction.OfPlayer || Ref.controller.IsInWeaponRange(toil.actor))
 					action2();
 			};
 		}
@@ -106,7 +123,7 @@ namespace RimBattle
 			var action = toil.preTickActions[i];
 			toil.preTickActions[i] = delegate
 			{
-				if (toil.actor.Faction != Faction.OfPlayer || Refs.controller.IsInWeaponRange(toil.actor))
+				if (toil.actor.Faction != Faction.OfPlayer || Ref.controller.IsInWeaponRange(toil.actor))
 					action();
 			};
 		}
@@ -126,7 +143,7 @@ namespace RimBattle
 			if (pawn.Faction != Faction.OfPlayer) return true;
 			var map = pawn.Map;
 			if (map == null) return true;
-			return Refs.controller.IsInWeaponRange(pawn);
+			return Ref.controller.IsInWeaponRange(pawn);
 		}
 	}
 
@@ -153,7 +170,7 @@ namespace RimBattle
 	{
 		static bool IsVisible(Map map, IntVec3 loc)
 		{
-			return Refs.controller.IsVisible(map, loc);
+			return Tools.IsVisible(map, loc);
 		}
 
 		static IEnumerable<MethodBase> TargetMethods()
@@ -192,7 +209,7 @@ namespace RimBattle
 	{
 		static bool IsVisible(Thing thing)
 		{
-			return Refs.controller.IsVisible(thing);
+			return Tools.IsVisible(thing);
 		}
 
 		static IEnumerable<MethodBase> TargetMethods()
@@ -231,8 +248,8 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static void Prefix(List<Pawn> pawns)
 		{
-			var controller = Refs.controller;
-			var myColonists = pawns.Where(pawn => controller.IsMyColonist(pawn)).ToList();
+			var controller = Ref.controller;
+			var myColonists = pawns.Where(pawn => controller.InMyTeam(pawn)).ToList();
 			pawns.Clear();
 			pawns.AddRange(myColonists);
 		}
@@ -247,9 +264,9 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn ___pawn)
 		{
-			if (Refs.controller.BattleOverview.showing) return false;
-			var controller = Refs.controller;
-			if (controller.IsVisible(___pawn) == false)
+			if (Ref.controller.battleOverview.showing) return false;
+			var controller = Ref.controller;
+			if (Tools.IsVisible(___pawn) == false)
 				return false;
 			return controller.IsInWeaponRange(___pawn);
 		}
@@ -264,8 +281,8 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix(Thing __instance)
 		{
-			if (Refs.controller.BattleOverview.showing) return false;
-			return Refs.controller.IsVisible(__instance);
+			if (Ref.controller.battleOverview.showing) return false;
+			return Tools.IsVisible(__instance);
 		}
 	}
 
@@ -277,8 +294,8 @@ namespace RimBattle
 	{
 		static bool IsFogged(FogGrid grid, IntVec3 c)
 		{
-			if (Refs.controller.BattleOverview.showing) return false;
-			if (Refs.controller.IsVisible(Refs.map(grid), c) == false)
+			if (Ref.controller.battleOverview.showing) return false;
+			if (Tools.IsVisible(Ref.map(grid), c) == false)
 				return false;
 			return grid.IsFogged(c);
 		}
@@ -304,7 +321,7 @@ namespace RimBattle
 		static bool Prefix(Thing newThing, IntVec3 loc, Map map, ref Thing __result)
 		{
 			if (newThing is Mote && loc.InBounds(map))
-				if (Refs.controller.IsVisible(map, loc) == false)
+				if (Tools.IsVisible(map, loc) == false)
 				{
 					__result = newThing;
 					return false;
@@ -340,7 +357,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
-			Func<Thing, bool> IsVisible = (thing) => Refs.controller.IsVisible(thing.Map, thing.Position);
+			Func<Thing, bool> IsVisible = (thing) => Tools.IsVisible(thing.Map, thing.Position);
 
 			foreach (var instruction in instructions)
 			{
@@ -377,7 +394,7 @@ namespace RimBattle
 		{
 			var myBase = __instance as SectionLayer;
 			if (myBase == null) return true;
-			var section = Refs.SectionLayer_section(myBase);
+			var section = Ref.SectionLayer_section(myBase);
 			CopiedMethods.RegenerateZone(myBase, section);
 			return false;
 		}

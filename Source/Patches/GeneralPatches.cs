@@ -1,6 +1,5 @@
 ﻿using Harmony;
 using RimWorld;
-using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -8,32 +7,6 @@ using Verse;
 
 namespace RimBattle
 {
-	// use 5% world coverage
-	//
-	[HarmonyPatch(typeof(Page_CreateWorldParams))]
-	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
-	static class Page_CreateWorldParams_PreOpen_Patch
-	{
-		[HarmonyPriority(10000)]
-		static void Postfix(ref float ___planetCoverage)
-		{
-			___planetCoverage = 0.05f;
-		}
-	}
-
-	// initialize our world component early and save a ref to it
-	//
-	[HarmonyPatch(typeof(World))]
-	[HarmonyPatch(nameof(World.FinalizeInit))]
-	static class World_FinalizeInit_Patch
-	{
-		[HarmonyPriority(10000)]
-		static void Postfix(World __instance)
-		{
-			Refs.controller = __instance.GetComponent<GameController>();
-		}
-	}
-
 	// getting our own OnGUI
 	//
 	[HarmonyPatch(typeof(UIRoot))]
@@ -43,7 +16,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
-			Refs.controller?.OnGUI();
+			Ref.controller?.OnGUI();
 		}
 	}
 
@@ -56,7 +29,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
-			return (Refs.controller?.battleOverview?.showing ?? true) == false;
+			return (Ref.controller?.battleOverview?.showing ?? true) == false;
 		}
 	}
 
@@ -70,7 +43,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
-			return Refs.controller.BattleOverview.showing == false;
+			return Ref.controller.battleOverview.showing == false;
 		}
 	}
 
@@ -83,11 +56,14 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
-			AccessTools.GetDeclaredFields(typeof(Keys))
+			AccessTools.GetDeclaredFields(typeof(Defs))
 				.Do(field =>
 				{
-					var keyDef = field.GetValue(null) as KeyBindingDef;
-					DefDatabase<KeyBindingDef>.Add(keyDef);
+					var def = field.GetValue(null);
+					if (def is KeyBindingDef keyDef)
+						DefDatabase<KeyBindingDef>.Add(keyDef);
+					if (def is MainButtonDef btnDef)
+						DefDatabase<MainButtonDef>.Add(btnDef);
 				});
 		}
 	}

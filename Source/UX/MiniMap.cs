@@ -30,7 +30,7 @@ namespace RimBattle
 
 		public MiniMap(int idx)
 		{
-			map = Refs.controller.MapByIndex(idx);
+			map = Ref.controller.MapByIndex(idx);
 			texture = new Texture2D(map.Size.x, map.Size.z, TextureFormat.RGB24, true);
 		}
 
@@ -91,7 +91,7 @@ namespace RimBattle
 			}
 
 			var fogGrid = map.fogGrid;
-			var visibleGrid = Refs.controller.mapParts[map].visibility;
+			var visibleGrid = map.GetComponent<MapPart>().visibility;
 			map.mapPawns.AllPawns.Do(pawn =>
 			{
 				if (pawn.RaceProps.Humanlike == false)
@@ -137,7 +137,7 @@ namespace RimBattle
 						{
 							Event.current.Use();
 							CameraJumper.TryJumpAndSelect(pawn);
-							Refs.controller.battleOverview.showing = false;
+							Ref.controller.battleOverview.showing = false;
 							return;
 						}
 					}
@@ -170,7 +170,7 @@ namespace RimBattle
 				texture.Apply(true);
 			}
 
-			var visibility = Refs.controller.mapParts[map].visibility;
+			var visibility = map.GetComponent<MapPart>().visibility;
 			for (var x = 0; x < mapSizeX; x++)
 				for (var z = 0; z < mapSizeZ; z++)
 				{
@@ -178,13 +178,13 @@ namespace RimBattle
 
 					if (map.fogGrid.IsFogged(idx))
 					{
-						texture.SetPixel(x, z, Refs.fogColor);
+						texture.SetPixel(x, z, Statics.fogColor);
 						continue;
 					}
 
 					if (visibility.IsVisible(idx) == false)
 					{
-						texture.SetPixel(x, z, Refs.notVisibleColor);
+						texture.SetPixel(x, z, Statics.notVisibleColor);
 						continue;
 					}
 
@@ -193,29 +193,29 @@ namespace RimBattle
 					{
 						if (edifice.def.building.isNaturalRock)
 						{
-							texture.SetPixel(x, z, Refs.mountainColor);
+							texture.SetPixel(x, z, Statics.mountainColor);
 							goto done;
 						}
 
 						var filled = edifice.def.Fillage == FillCategory.Full && !edifice.def.IsDoor;
-						texture.SetPixel(x, z, Refs.edificeColor * (filled ? 1f : 0.5f));
+						texture.SetPixel(x, z, Statics.edificeColor * (filled ? 1f : 0.5f));
 						goto done;
 					}
 
 					var terrain = map.terrainGrid.TerrainAt(idx);
 					if (terrain.IsWater || terrain.IsRiver)
 					{
-						texture.SetPixel(x, z, Refs.waterColor);
+						texture.SetPixel(x, z, Statics.waterColor);
 						goto done;
 					}
 
-					texture.SetPixel(x, z, Refs.groundColor);
+					texture.SetPixel(x, z, Statics.groundColor);
 
 				done:
 					var things = map.thingGrid.ThingsListAtFast(idx);
 					for (var i = 0; i < things.Count; i++)
 						if (things[i].def.category == ThingCategory.Plant)
-							texture.SetPixel(x, z, Refs.plantColor);
+							texture.SetPixel(x, z, Statics.plantColor);
 
 					if (++yieldCounter > pixelsPerYield)
 					{

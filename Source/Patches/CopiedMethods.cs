@@ -11,7 +11,7 @@ namespace RimBattle
 		//
 		public static void RegenerateFog(SectionLayer layer)
 		{
-			var section = Refs.SectionLayer_section(layer);
+			var section = Ref.SectionLayer_section(layer);
 			var map = section.map;
 
 			var subMesh = layer.GetSubMesh(MatBases.FogOfWar);
@@ -20,13 +20,13 @@ namespace RimBattle
 			subMesh.Clear(MeshParts.Colors);
 
 			var fogGrid = map.fogGrid.fogGrid;
-			var visibleGrid = Refs.controller.mapParts[map].visibility.visible;
+			var visibleGrid = map.GetComponent<MapPart>().visibility.visible;
 			var cellIndices = map.cellIndices;
 
 			bool FoggedOrNotVisible(int x, int y)
 			{
 				var n = cellIndices.CellToIndex(x, y);
-				return visibleGrid[n] == false || fogGrid[n];
+				return visibleGrid[n] == 0 || fogGrid[n];
 			}
 
 			var cellRect = section.CellRect;
@@ -119,7 +119,7 @@ namespace RimBattle
 		public static void RegenerateZone(SectionLayer myBase, Section section)
 		{
 			var map = section.map;
-			var visibility = Refs.controller.mapParts[map].visibility;
+			var visibility = map.GetComponent<MapPart>().visibility;
 			var cellIndices = map.cellIndices;
 
 			var y = AltitudeLayer.Zone.AltitudeFor();

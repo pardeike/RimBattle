@@ -8,6 +8,25 @@ using Verse;
 
 namespace RimBattle
 {
+	// prepare teams before map starts filling with things
+	/*
+	[HarmonyPatch(typeof(Map))]
+	[HarmonyPatch(nameof(Map.ConstructComponents))]
+	static class Map_ConstructComponents_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(Map __instance)
+		{
+			if (Tools.HasTeam == false)
+				return;
+			if (Scribe.mode != LoadSaveMode.LoadingVars)
+				return;
+
+			Team.CreateWithColonists(__instance);
+			Ref.controller.CreateMapPart(__instance);
+		}
+	}*/
+
 	// intercept the next button on world tile select page and store
 	// the resulting cells (if all are ok)
 	//
@@ -24,7 +43,7 @@ namespace RimBattle
 				var tiles = Tools.CalculateTiles(center);
 				if (Tools.CheckTiles(tiles))
 				{
-					Refs.controller.tiles = tiles.ToList();
+					Ref.controller.tiles = tiles.ToList();
 					__result = true;
 					return;
 				}
@@ -42,7 +61,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static bool Prefix(WorldLayer_MouseTile __instance, ref int __result)
 		{
-			if (__instance.GetType().Assembly == typeof(WorldLayer_MouseTile).Assembly)
+			if (__instance.GetType().Assembly == typeof(WorldLayer_MouseTile_Tile_Patch).Assembly)
 				return true;
 
 			__result = -1;
@@ -77,7 +96,33 @@ namespace RimBattle
 		}
 	}
 
+	// init gamecontroller early
 	//
+	[HarmonyPatch(typeof(Page_CreateWorldParams))]
+	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
+	static class Page_CreateWorldParams_PreOpen_Patch1
+	{
+		[HarmonyPriority(10000)]
+		static void Prefix()
+		{
+			Ref.controller = Current.Game.GetComponent<GameController>();
+		}
+	}
+
+	// init use 5% world coverage
+	//
+	[HarmonyPatch(typeof(Page_CreateWorldParams))]
+	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
+	static class Page_CreateWorldParams_PreOpen_Patch2
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(ref float ___planetCoverage)
+		{
+			___planetCoverage = 0.05f;
+		}
+	}
+
+	// add our start configuration interface
 	//
 	[HarmonyPatch(typeof(Page_CreateWorldParams))]
 	[HarmonyPatch(nameof(Page_CreateWorldParams.DoWindowContents))]

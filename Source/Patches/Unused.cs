@@ -21,7 +21,7 @@
 		static void Prefix(HashSet<Thing> ___drawThings, out List<Thing> __state)
 		{
 			__state = ___drawThings.ToList();
-			___drawThings.RemoveWhere(thing => Refs.controller.IsVisible(thing) == false);
+			___drawThings.RemoveWhere(thing => Ref.controller.IsVisible(thing) == false);
 		}
 
 		[HarmonyPriority(10000)]
@@ -64,7 +64,7 @@
 	{
 		static bool Prefix(Pawn pawn, ref Color __result)
 		{
-			var team = Refs.controller.TeamForPawn(pawn);
+			var team = Ref.controller.TeamForPawn(pawn);
 			if (team == null) return true;
 			__result = team.color;
 			return false;
@@ -88,7 +88,7 @@
 	//			return false;
 	//		}
 
-	//		if (Refs.controller.mapParts.TryGetValue(___map, out var mapPart))
+	//		if (Ref.controller.mapParts.TryGetValue(___map, out var mapPart))
 	//			if (mapPart.visibility.IsVisible(c) == false)
 	//			{
 	//				__result = true;
@@ -106,7 +106,7 @@
 	//{
 	//	static bool Prefix(Map ___map, int index, ref bool __result)
 	//	{
-	//		if (Refs.controller.mapParts.TryGetValue(___map, out var mapPart))
+	//		if (Ref.controller.mapParts.TryGetValue(___map, out var mapPart))
 	//			if (mapPart.visibility.IsVisible(index) == false)
 	//			{
 	//				__result = true;

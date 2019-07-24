@@ -25,7 +25,7 @@ namespace RimBattle
 
 		void UpdateTextureFully()
 		{
-			for (var i = 0; i < GameController.tileCount; i++)
+			for (var i = 0; i < Ref.controller.tileCount; i++)
 			{
 				if (minimaps[i] == null)
 					minimaps[i] = new MiniMap(i);
@@ -61,7 +61,7 @@ namespace RimBattle
 			updater = updater ?? minimaps[mapCounter].UpdateTexture();
 			if (updater.MoveNext() == false)
 			{
-				mapCounter = (mapCounter + 1) % GameController.tileCount;
+				mapCounter = (mapCounter + 1) % Ref.controller.tileCount;
 				updater = minimaps[mapCounter].UpdateTexture();
 			}
 		}
@@ -70,7 +70,7 @@ namespace RimBattle
 		{
 			void SetSelected(Map map)
 			{
-				Current.Game.CurrentMap = map; Refs.controller.battleOverview.showing = false;
+				Current.Game.CurrentMap = map; Ref.controller.battleOverview.showing = false;
 				SoundDefOf.MapSelected.PlayOneShotOnCamera(null);
 			}
 
@@ -112,7 +112,7 @@ namespace RimBattle
 				new int[] { 2, 1, 2 },
 				new int[] { 2, 2, 2 },
 				new int[] { 2, 3, 2 },
-			}[GameController.tileCount - 1];
+			}[Ref.controller.tileCount - 1];
 
 			var rowCount = colCounts.Length;
 			var maxColCount = colCounts.Max();
