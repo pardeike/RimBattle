@@ -18,6 +18,7 @@ namespace RimBattle
 				Ref.controller.team = team;
 		}
 
+#pragma warning disable CA1822 // Mark members as static
 		public void DoWindowContents(Rect inRect)
 		{
 			var list = new Listing_Standard { ColumnWidth = (inRect.width - 34f) / 2f };
@@ -32,5 +33,6 @@ namespace RimBattle
 
 			list.End();
 		}
+#pragma warning restore CA1822 // Mark members as static
 	}
 }

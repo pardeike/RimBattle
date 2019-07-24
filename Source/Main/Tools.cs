@@ -115,6 +115,7 @@ namespace RimBattle
 				}
 
 				game.FinalizeInit();
+				game.playSettings.useWorkPriorities = true;
 
 				Find.CameraDriver.JumpToCurrentMapLoc(MapGenerator.PlayerStartSpot);
 				Find.CameraDriver.ResetSize();
@@ -157,8 +158,16 @@ namespace RimBattle
 
 		// general stats manipulation
 		//
-		public static void TweakStat(StatDef stat, ref float result)
+		public static void TweakStat(Thing thing, StatDef stat, ref float result)
 		{
+			var pawn = thing as Pawn;
+			if (pawn != null && pawn.RaceProps.Animal)
+				if (stat == StatDefOf.MinimumHandlingSkill)
+				{
+					result = 0f;
+					return;
+				}
+
 			// much faster
 			if (stat == StatDefOf.ConstructionSpeed) { result *= 10f; return; }
 			if (stat == StatDefOf.ConstructionSpeedFactor) { result *= 10f; return; }
@@ -526,7 +535,7 @@ namespace RimBattle
 			if (pawn.Faction != Faction.OfPlayer)
 				return true;
 
-			return controller.IsInWeaponRange(pawn);
+			return controller.IsInVisibleRange(pawn);
 		}
 
 		// hours to human readable text

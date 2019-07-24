@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using RimWorld;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Verse;
@@ -80,24 +81,27 @@ namespace RimBattle
 			return pawn.GetTeamID() == team;
 		}
 
-		public IEnumerable<Pawn> MyColonistsOn(Map map)
+		public IEnumerable<Pawn> MyColonistsOn(Map map, bool includeTameAnimals = true)
 		{
-			return teams[team].members.Where(pawn => pawn.Map == map);
+			foreach (var pawn in teams[team].members.Where(pawn => pawn.Map == map))
+				yield return pawn;
+			if (includeTameAnimals == false)
+				yield break;
+
+			foreach (var pawn in map.mapPawns.PawnsInFaction(Faction.OfPlayer)
+				.Where(pawn => pawn.RaceProps.Animal)
+				.Where(Ref.controller.InMyTeam))
+			{
+				yield return pawn;
+			}
 		}
 
-		public bool IsInWeaponRange(Pawn pawn)
+		public bool IsInVisibleRange(Pawn pawn)
 		{
 			if (InMyTeam(pawn)) return true;
 			var pos = pawn.Position;
 			return MyColonistsOn(pawn.Map)
 				.Any(myColonist => myColonist.Position.DistanceToSquared(pos) <= myColonist.WeaponRange(true));
-		}
-
-		public bool IsInWeaponRange(TargetInfo targetInfo)
-		{
-			var cell = targetInfo.Cell;
-			return MyColonistsOn(targetInfo.Map)
-				.Any(myColonist => myColonist.Position.DistanceToSquared(cell) <= myColonist.WeaponRange(true));
 		}
 
 		public void OnGUI()

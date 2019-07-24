@@ -82,21 +82,71 @@ namespace RimBattle
 		}
 	}
 
-	// tweak stats
+	// tweak stats 1
 	//
-	[HarmonyPatch]
+	[HarmonyPatch(typeof(StatExtension))]
+	[HarmonyPatch(nameof(StatExtension.GetStatValue))]
+	[HarmonyPatch(new[] { typeof(Thing), typeof(StatDef), typeof(bool) })]
 	static class StatExtension_GetStatValue_Patch
 	{
-		static IEnumerable<MethodBase> TargetMethods()
+		[HarmonyPriority(10000)]
+		static void Postfix(ref float __result, Thing thing, StatDef stat)
 		{
-			yield return SymbolExtensions.GetMethodInfo(() => StatExtension.GetStatValue(null, StatDefOf.Mass, false));
-			yield return SymbolExtensions.GetMethodInfo(() => StatExtension.GetStatValueAbstract(null, StatDefOf.Mass, null));
+			Tools.TweakStat(thing, stat, ref __result);
 		}
+	}
 
+	// tweak stats 2
+	//
+	[HarmonyPatch(typeof(StatExtension))]
+	[HarmonyPatch(nameof(StatExtension.GetStatValueAbstract))]
+	[HarmonyPatch(new[] { typeof(BuildableDef), typeof(StatDef), typeof(ThingDef) })]
+	static class StatExtension_GetStatValueAbstract_Patch
+	{
 		[HarmonyPriority(10000)]
 		static void Postfix(ref float __result, StatDef stat)
 		{
-			Tools.TweakStat(stat, ref __result);
+			Tools.TweakStat(null, stat, ref __result);
+		}
+	}
+
+	// auto taming animals (not training)
+	//
+	[HarmonyPatch]
+	static class InteractionWorker_RecruitAttempt_DoRecruit_Patch
+	{
+		static MethodBase TargetMethod()
+		{
+			var parameters = new[] { typeof(Pawn), typeof(Pawn), typeof(float), typeof(string).MakeByRefType(), typeof(string).MakeByRefType(), typeof(bool), typeof(bool) };
+			return AccessTools.Method(typeof(InteractionWorker_RecruitAttempt), nameof(InteractionWorker_RecruitAttempt.DoRecruit), parameters);
+		}
+
+		[HarmonyPriority(10000)]
+		static void Prefix(ref float recruitChance)
+		{
+			recruitChance = 1f;
+		}
+	}
+
+	// auto master of tamed animals
+	//
+	[HarmonyPatch(typeof(RelationsUtility))]
+	[HarmonyPatch(nameof(RelationsUtility.TryDevelopBondRelation))]
+	static class RelationsUtility_TryDevelopBondRelation_Patch
+	{
+		/* we could make this 100% bonding
+		 * 
+		[HarmonyPriority(10000)]
+		static void Prefix(ref float baseChance)
+		{
+			baseChance = 1f;
+		}*/
+
+		[HarmonyPriority(10000)]
+		static void Postfix(bool __result, Pawn humanlike, Pawn animal)
+		{
+			if (__result)
+				Ref.master(animal.playerSettings) = humanlike;
 		}
 	}
 

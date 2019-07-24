@@ -8,25 +8,6 @@ using Verse;
 
 namespace RimBattle
 {
-	// prepare teams before map starts filling with things
-	/*
-	[HarmonyPatch(typeof(Map))]
-	[HarmonyPatch(nameof(Map.ConstructComponents))]
-	static class Map_ConstructComponents_Patch
-	{
-		[HarmonyPriority(10000)]
-		static void Postfix(Map __instance)
-		{
-			if (Tools.HasTeam == false)
-				return;
-			if (Scribe.mode != LoadSaveMode.LoadingVars)
-				return;
-
-			Team.CreateWithColonists(__instance);
-			Ref.controller.CreateMapPart(__instance);
-		}
-	}*/
-
 	// intercept the next button on world tile select page and store
 	// the resulting cells (if all are ok)
 	//

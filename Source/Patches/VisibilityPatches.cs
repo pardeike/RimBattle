@@ -69,7 +69,7 @@ namespace RimBattle
 			if (___pawn.Faction != Faction.OfPlayer) return true;
 			var map = ___pawn.Map;
 			if (map == null) return true;
-			__state = Ref.controller.IsInWeaponRange(___pawn);
+			__state = Ref.controller.IsInVisibleRange(___pawn);
 			return __state;
 		}
 
@@ -103,7 +103,7 @@ namespace RimBattle
 			var action2 = toil.preTickActions[last2];
 			toil.preTickActions[last2] = delegate
 			{
-				if (toil.actor.Faction != Faction.OfPlayer || Ref.controller.IsInWeaponRange(toil.actor))
+				if (toil.actor.Faction != Faction.OfPlayer || Ref.controller.IsInVisibleRange(toil.actor))
 					action2();
 			};
 		}
@@ -123,7 +123,7 @@ namespace RimBattle
 			var action = toil.preTickActions[i];
 			toil.preTickActions[i] = delegate
 			{
-				if (toil.actor.Faction != Faction.OfPlayer || Ref.controller.IsInWeaponRange(toil.actor))
+				if (toil.actor.Faction != Faction.OfPlayer || Ref.controller.IsInVisibleRange(toil.actor))
 					action();
 			};
 		}
@@ -143,7 +143,7 @@ namespace RimBattle
 			if (pawn.Faction != Faction.OfPlayer) return true;
 			var map = pawn.Map;
 			if (map == null) return true;
-			return Ref.controller.IsInWeaponRange(pawn);
+			return Ref.controller.IsInVisibleRange(pawn);
 		}
 	}
 
@@ -268,7 +268,7 @@ namespace RimBattle
 			var controller = Ref.controller;
 			if (Tools.IsVisible(___pawn) == false)
 				return false;
-			return controller.IsInWeaponRange(___pawn);
+			return controller.IsInVisibleRange(___pawn);
 		}
 	}
 
