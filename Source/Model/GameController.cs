@@ -78,7 +78,7 @@ namespace RimBattle
 
 		public bool InMyTeam(Pawn pawn)
 		{
-			return pawn.GetTeamID() == team;
+			return pawn != null && pawn.GetTeamID() == team;
 		}
 
 		public IEnumerable<Pawn> MyColonistsOn(Map map, bool includeTameAnimals = true)
