@@ -32,11 +32,13 @@ namespace RimBattle
 				minSpeed = 0;
 			}
 
-			var currentSpeed = (int)tickManager.CurTimeSpeed;
-			Log.Warning($"Speed change from {currentSpeed} to {minSpeed}");
-			if (currentSpeed != minSpeed)
+			var timeSpeed = Ref.CachedTimeSpeedValues[minSpeed];
+			var currentSpeed = tickManager.CurTimeSpeed;
+
+			Log.Warning($"Speed change from {currentSpeed} to {timeSpeed}");
+			if (currentSpeed != timeSpeed)
 			{
-				tickManager.CurTimeSpeed = (TimeSpeed)minSpeed;
+				tickManager.CurTimeSpeed = timeSpeed;
 				Log.Warning($"Speed now {tickManager.CurTimeSpeed}");
 				Ref.PlaySoundOf(null, new object[] { tickManager.CurTimeSpeed });
 			}

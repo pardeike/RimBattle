@@ -55,7 +55,7 @@ namespace RimBattle
 					var tileIndicies = Tools.TeamTiles(tileCount, Ref.controller.teamCount);
 					for (var i = 0; i < tileIndicies.Length; i++)
 					{
-						GUI.color = Statics.TeamColors[i];
+						GUI.color = Ref.TeamColors[i];
 						GUI.DrawTexture(r, Statics.Teams[tileIndicies[i]], ScaleMode.ScaleToFit);
 					}
 					if (tileCount == Ref.controller.tileCount)

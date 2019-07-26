@@ -23,7 +23,7 @@ namespace RimBattle
 			master = Tools.CreateTeamMaster();
 			name = NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker);
 			color = GenColor.RandomColorOpaque();
-			ticketsLeft = Statics.startTickets;
+			ticketsLeft = Ref.startTickets;
 			members = new HashSet<Pawn>();
 			gameSpeed = 1;
 		}

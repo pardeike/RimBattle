@@ -116,7 +116,7 @@ namespace RimBattle
 				{
 					var team = colonist ? pawn.GetTeamID() : -1;
 					if (team == Ref.controller.team) team = -1;
-					var color = team >= 0 ? Statics.TeamColors[team] : (pawn.RaceProps.Animal ? Color.gray : PawnNameColorUtility.PawnNameColorOf(pawn));
+					var color = team >= 0 ? Ref.TeamColors[team] : (pawn.RaceProps.Animal ? Color.gray : PawnNameColorUtility.PawnNameColorOf(pawn));
 					color.a = canSelect || isCurrent ? 1f : 0.4f;
 					Widgets.DrawBoxSolid(r, color);
 					if (Find.Selector.IsSelected(pawn))
@@ -182,13 +182,13 @@ namespace RimBattle
 
 					if (map.fogGrid.IsFogged(idx))
 					{
-						texture.SetPixel(x, z, Statics.fogColor);
+						texture.SetPixel(x, z, Ref.fogColor);
 						continue;
 					}
 
 					if (visibility.IsVisible(idx) == false)
 					{
-						texture.SetPixel(x, z, Statics.notVisibleColor);
+						texture.SetPixel(x, z, Ref.notVisibleColor);
 						continue;
 					}
 
@@ -197,29 +197,29 @@ namespace RimBattle
 					{
 						if (edifice.def.building.isNaturalRock)
 						{
-							texture.SetPixel(x, z, Statics.mountainColor);
+							texture.SetPixel(x, z, Ref.mountainColor);
 							goto done;
 						}
 
 						var filled = edifice.def.Fillage == FillCategory.Full && !edifice.def.IsDoor;
-						texture.SetPixel(x, z, Statics.edificeColor * (filled ? 1f : 0.5f));
+						texture.SetPixel(x, z, Ref.edificeColor * (filled ? 1f : 0.5f));
 						goto done;
 					}
 
 					var terrain = map.terrainGrid.TerrainAt(idx);
 					if (terrain.IsWater || terrain.IsRiver)
 					{
-						texture.SetPixel(x, z, Statics.waterColor);
+						texture.SetPixel(x, z, Ref.waterColor);
 						goto done;
 					}
 
-					texture.SetPixel(x, z, Statics.groundColor);
+					texture.SetPixel(x, z, Ref.groundColor);
 
 				done:
 					var things = map.thingGrid.ThingsListAtFast(idx);
 					for (var i = 0; i < things.Count; i++)
 						if (things[i].def.category == ThingCategory.Plant)
-							texture.SetPixel(x, z, Statics.plantColor);
+							texture.SetPixel(x, z, Ref.plantColor);
 
 					if (++yieldCounter > pixelsPerYield)
 					{

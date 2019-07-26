@@ -65,8 +65,8 @@ namespace RimBattle
 				Log.Error("Called InitNewGame() but init data is null. Create it first.", false);
 				return;
 			}
-			if (Statics.forceMapSize > 0)
-				game.InitData.mapSize = Statics.forceMapSize;
+			if (Ref.forceMapSize > 0)
+				game.InitData.mapSize = Ref.forceMapSize;
 
 			MemoryUtility.UnloadUnusedUnityAssets();
 			DeepProfiler.Start("InitNewGame");
@@ -216,7 +216,7 @@ namespace RimBattle
 		public static int[] TilePattern()
 		{
 			var n = Ref.controller.tileCount;
-			return Statics.teamTiles[n - 1][n - 2];
+			return Ref.teamTiles[n - 1][n - 2];
 		}
 
 		// returns a map for a tile number
@@ -231,7 +231,7 @@ namespace RimBattle
 		//
 		public static int[] TeamTiles(int tileCount, int teamCount)
 		{
-			return Statics.teamTiles[tileCount - 1][teamCount - 2];
+			return Ref.teamTiles[tileCount - 1][teamCount - 2];
 		}
 
 		// validates several tiles at once
@@ -480,7 +480,7 @@ namespace RimBattle
 			if (verb != null && verb.verbProps.IsMeleeAttack == false)
 				range = Math.Min(90f, verb.verbProps.range);
 			else
-				range = Statics.defaultVisibleRange;
+				range = Ref.defaultVisibleRange;
 			return squared ? range * range : range;
 		}
 
@@ -550,7 +550,7 @@ namespace RimBattle
 		//
 		private static IEnumerable<IntVec3> GetCircleVectors(float radius)
 		{
-			if (Statics.circleCache.TryGetValue(radius, out var cells) == false)
+			if (Ref.circleCache.TryGetValue(radius, out var cells) == false)
 			{
 				cells = new HashSet<IntVec3>();
 				var enumerator = GenRadial.RadialPatternInRadius(radius).GetEnumerator();
@@ -563,7 +563,7 @@ namespace RimBattle
 					cells.Add(new IntVec3(v.x, 0, -v.z));
 				}
 				enumerator.Dispose();
-				Statics.circleCache[radius] = cells;
+				Ref.circleCache[radius] = cells;
 			}
 			return cells;
 		}

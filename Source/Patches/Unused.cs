@@ -2,6 +2,18 @@
 {
 	// maybe used later
 
+	/*[HarmonyPatch(typeof(World))]
+	[HarmonyPatch(nameof(World.FinalizeInit))]
+	class World_FinalizeInit_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix()
+		{
+			var multiPlayerType = AccessTools.TypeByName("Multiplayer.Client.Multiplayer");
+			Log.Warning("type = " + multiPlayerType);
+		}
+	}*/
+
 	/*[HarmonyPatch(typeof(MapInterface))]
 	[HarmonyPatch(nameof(MapInterface.Notify_SwitchedMap))]
 	class MapInterface_Notify_SwitchedMap_Patch

@@ -75,7 +75,7 @@ namespace RimBattle
 		{
 			var idx1 = TileIndex(tileFrom);
 			var idx2 = TileIndex(tileTo);
-			return Statics.adjactedTiles[idx1].Contains(idx2);
+			return Ref.adjactedTiles[idx1].Contains(idx2);
 		}
 
 		public bool CanReach(Map mapFrom, Map mapTo)
@@ -145,7 +145,7 @@ namespace RimBattle
 			{
 				if (teams.Count == 0) return 0f;
 				var minTickets = teams.Select(team => team.ticketsLeft).Min();
-				return 1f - (float)minTickets / Statics.startTickets;
+				return 1f - (float)minTickets / Ref.startTickets;
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 ﻿using Harmony;
 using RimWorld;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -11,50 +12,6 @@ namespace RimBattle
 	{
 		public static GameController controller;
 
-		public static readonly FieldRef<Pawn_PlayerSettings, Pawn> master = FieldRefAccess<Pawn_PlayerSettings, Pawn>("master");
-		public static readonly FieldRef<SectionLayer, Section> SectionLayer_section = FieldRefAccess<SectionLayer, Section>("section");
-		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
-		public static readonly FieldRef<MapDrawer, Section[,]> sections = FieldRefAccess<MapDrawer, Section[,]>("sections");
-		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
-		public static readonly FieldRef<TransferableOneWayWidget, List<object>> TransferableOneWayWidget_sections = FieldRefAccess<TransferableOneWayWidget, List<object>>("sections");
-		public static readonly FieldRef<Dialog_FormCaravan, bool> Dialog_FormCaravan_canChooseRoute = FieldRefAccess<Dialog_FormCaravan, bool>("canChooseRoute");
-		public static readonly FieldRef<Dialog_FormCaravan, Map> Dialog_FormCaravan_map = FieldRefAccess<Dialog_FormCaravan, Map>("map");
-		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_startingTile = FieldRefAccess<Dialog_FormCaravan, int>("startingTile");
-		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_destinationTile = FieldRefAccess<Dialog_FormCaravan, int>("destinationTile");
-		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_startingTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("startingTile");
-		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_destinationTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("destinationTile");
-		public static readonly FieldRef<LordJob_FormAndSendCaravan, IntVec3> LordJob_FormAndSendCaravan_exitSpot = FieldRefAccess<LordJob_FormAndSendCaravan, IntVec3>("exitSpot");
-
-		public static FastInvokeHandler PlaySoundOf = MethodInvoker.GetHandler(AccessTools.Method(typeof(TimeControls), "PlaySoundOf"));
-	}
-
-	class Defs
-	{
-		public static readonly KeyBindingDef BattleMap = new KeyBindingDef()
-		{
-			label = "Toggle battle map tab",
-			defName = "MainTab_Battle",
-			category = KeyBindingCategoryDefOf.MainTabs,
-			defaultKeyCodeA = KeyCode.Tab,
-			defaultKeyCodeB = KeyCode.BackQuote,
-			modContentPack = MainButtonDefOf.Architect.modContentPack
-		};
-
-		public static readonly MainButtonDef Battle = new MainButtonDef()
-		{
-			defName = "Battle",
-			label = "battle",
-			description = "Shows the main battle overview with its 7 maps and possible spawns.",
-			workerClass = typeof(ToggleBattle),
-			order = 100,
-			defaultHotKey = KeyCode.F12,
-			validWithoutMap = true
-		};
-	}
-
-	[StaticConstructorOnStartup]
-	class Statics
-	{
 		// ---#3#-#2#---
 		// -#4#-#0#-#1#-
 		// ---#5#-#6#---
@@ -141,6 +98,23 @@ namespace RimBattle
 
 		public static readonly string[] tileNames = new string[] { "Center", "Right", "TopRight", "TopLeft", "Left", "BottomLeft", "BottomRight" };
 
+		public static readonly FieldRef<Pawn_PlayerSettings, Pawn> master = FieldRefAccess<Pawn_PlayerSettings, Pawn>("master");
+		public static readonly FieldRef<SectionLayer, Section> SectionLayer_section = FieldRefAccess<SectionLayer, Section>("section");
+		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
+		public static readonly FieldRef<MapDrawer, Section[,]> sections = FieldRefAccess<MapDrawer, Section[,]>("sections");
+		public static readonly FieldRef<ThingWithComps, List<ThingComp>> comps = FieldRefAccess<ThingWithComps, List<ThingComp>>("comps");
+		public static readonly FieldRef<TransferableOneWayWidget, List<object>> TransferableOneWayWidget_sections = FieldRefAccess<TransferableOneWayWidget, List<object>>("sections");
+		public static readonly FieldRef<Dialog_FormCaravan, bool> Dialog_FormCaravan_canChooseRoute = FieldRefAccess<Dialog_FormCaravan, bool>("canChooseRoute");
+		public static readonly FieldRef<Dialog_FormCaravan, Map> Dialog_FormCaravan_map = FieldRefAccess<Dialog_FormCaravan, Map>("map");
+		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_startingTile = FieldRefAccess<Dialog_FormCaravan, int>("startingTile");
+		public static readonly FieldRef<Dialog_FormCaravan, int> Dialog_FormCaravan_destinationTile = FieldRefAccess<Dialog_FormCaravan, int>("destinationTile");
+		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_startingTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("startingTile");
+		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_destinationTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("destinationTile");
+		public static readonly FieldRef<LordJob_FormAndSendCaravan, IntVec3> LordJob_FormAndSendCaravan_exitSpot = FieldRefAccess<LordJob_FormAndSendCaravan, IntVec3>("exitSpot");
+
+		public static FastInvokeHandler PlaySoundOf = MethodInvoker.GetHandler(Method(typeof(TimeControls), "PlaySoundOf"));
+		public static readonly TimeSpeed[] CachedTimeSpeedValues = (TimeSpeed[])Enum.GetValues(typeof(TimeSpeed));
+
 		public static readonly Color notVisibleColor = new ColorInt(32, 32, 32).ToColor;
 		public static readonly Color fogColor = new ColorInt(61, 53, 51).ToColor;
 		public static readonly Color edificeColor = new ColorInt(113, 109, 93).ToColor;
@@ -149,7 +123,35 @@ namespace RimBattle
 		public static readonly Color groundColor = new ColorInt(100, 77, 58).ToColor;
 		public static readonly Color mountainColor = new ColorInt(58, 63, 63).ToColor;
 		public static readonly Color animalColor = new ColorInt(128, 128, 128).ToColor;
+	}
 
+	class Defs
+	{
+		public static readonly KeyBindingDef BattleMap = new KeyBindingDef()
+		{
+			label = "Toggle battle map tab",
+			defName = "MainTab_Battle",
+			category = KeyBindingCategoryDefOf.MainTabs,
+			defaultKeyCodeA = KeyCode.Tab,
+			defaultKeyCodeB = KeyCode.BackQuote,
+			modContentPack = MainButtonDefOf.Architect.modContentPack
+		};
+
+		public static readonly MainButtonDef Battle = new MainButtonDef()
+		{
+			defName = "Battle",
+			label = "battle",
+			description = "Shows the main battle overview with its 7 maps and possible spawns.",
+			workerClass = typeof(ToggleBattle),
+			order = 100,
+			defaultHotKey = KeyCode.F12,
+			validWithoutMap = true
+		};
+	}
+
+	[StaticConstructorOnStartup]
+	class Statics
+	{
 		public static readonly Material MouseTileError = MaterialPool.MatFrom("MouseTileError", ShaderDatabase.WorldOverlayAdditive, 3560);
 		public static readonly Material SelectedTileError = MaterialPool.MatFrom("SelectedTileError", ShaderDatabase.WorldOverlayAdditive, 3560);
 		public static readonly Material[] Badges = Tools.GetMaterials("Badges/Badge#", 0, 6, ShaderDatabase.MetaOverlay);
