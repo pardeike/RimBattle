@@ -118,7 +118,6 @@ namespace RimBattle
 
 		static readonly MethodInfo m_HostileTo = SymbolExtensions.GetMethodInfo(() => GenHostility.HostileTo(default, default(Faction)));
 		static readonly MethodInfo m_IsActiveThreatToPlayer = SymbolExtensions.GetMethodInfo(() => GenHostility.IsActiveThreatToPlayer(default));
-		//static readonly MethodInfo m_IsActiveThreatTo = SymbolExtensions.GetMethodInfo(() => GenHostility.IsActiveThreatTo(default, default));
 		static readonly MethodInfo m_ForAttackHostile = SymbolExtensions.GetMethodInfo(() => TargetingParameters.ForAttackHostile());
 		static readonly Type t_GenAI_Inner_InDangerousCombat = AccessTools.FirstInner(typeof(GenAI), t => t.Name.Contains("InDangerousCombat"));
 
@@ -149,15 +148,6 @@ namespace RimBattle
 					return p1.GetTeamID() != p2.GetTeamID();
 			return GenHostility.IsActiveThreatToPlayer(target);
 		}
-
-		/*static readonly MethodInfo m_MyIsActiveThreatTo = SymbolExtensions.GetMethodInfo(() => MyIsActiveThreatTo(default, default, null));
-		static bool MyIsActiveThreatTo(IAttackTarget target, Faction faction, Thing extraThing)
-		{
-			if (target.Thing is Pawn p1 && extraThing is Pawn p2)
-				if (p1.IsColonist && p2.IsColonist)
-					return p1.GetTeamID() != p2.GetTeamID();
-			return GenHostility.IsActiveThreatTo(target, faction);
-		}*/
 
 		static readonly MethodInfo m_MyForAttackHostile = SymbolExtensions.GetMethodInfo(() => MyForAttackHostile());
 		static TargetingParameters MyForAttackHostile()
