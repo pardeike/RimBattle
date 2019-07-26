@@ -21,17 +21,18 @@ namespace RimBattle
 	[HarmonyPatch(nameof(InspectGizmoGrid.DrawInspectGizmoGridFor))]
 	static class InspectGizmoGrid_DrawInspectGizmoGridFor_Patch
 	{
-		static void ClearAndAddOurGizmo(List<Gizmo> list)
+		static void ClearAndAddOurGizmo(List<Gizmo> list, IEnumerable<object> selectedObjects)
 		{
 			list.Clear();
-			Tools.AddFormCaravanGizmo(list);
+			if (selectedObjects.OfType<Pawn>().Any(Ref.controller.InMyTeam))
+				Tools.AddFormCaravanGizmo(list);
 		}
 
 		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
 		{
 			var m_List_Gizmo_Clear = SymbolExtensions.GetMethodInfo(() => new List<Gizmo>().Clear());
-			var m_ClearAndAddOurGizmo = SymbolExtensions.GetMethodInfo(() => ClearAndAddOurGizmo(null));
+			var m_ClearAndAddOurGizmo = SymbolExtensions.GetMethodInfo(() => ClearAndAddOurGizmo(null, null));
 			foreach (var instruction in instructions)
 			{
 				var first = true;
@@ -39,6 +40,7 @@ namespace RimBattle
 					if (instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt)
 						if (instruction.operand == m_List_Gizmo_Clear)
 						{
+							yield return new CodeInstruction(OpCodes.Ldarg_0);
 							instruction.opcode = OpCodes.Call;
 							instruction.operand = m_ClearAndAddOurGizmo;
 							first = false;
@@ -153,7 +155,7 @@ namespace RimBattle
 		}
 	}
 
-	// 
+	// replace default lord job with a subclass of our own
 	//
 	[HarmonyPatch(typeof(CaravanFormingUtility))]
 	[HarmonyPatch(nameof(CaravanFormingUtility.StartFormingCaravan))]

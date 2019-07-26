@@ -185,7 +185,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
-			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod();
+			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod(true);
 			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null, IntVec3.Zero));
 			var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
 			yield return new CodeInstruction(OpCodes.Ldarg_0);
@@ -224,7 +224,7 @@ namespace RimBattle
 		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
-			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod();
+			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod(true);
 			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null));
 			var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
 			yield return new CodeInstruction(OpCodes.Ldarg_1);

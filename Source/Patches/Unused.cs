@@ -32,32 +32,6 @@
 		}
 	}*/
 
-	/*[HarmonyPatch(typeof(Pawn))]
-	[HarmonyPatch(nameof(Pawn.GetGizmos))]
-	static class Pawn_GetGizmos_Patch
-	{
-		[HarmonyPriority(10000)]
-		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, Pawn __instance)
-		{
-			foreach (var gizmo in gizmos)
-				yield return gizmo;
-
-			if (__instance.IsColonistPlayerControlled)
-				yield return new Command_Action
-				{
-					defaultLabel = "CommandFormCaravan".Translate(),
-					defaultDesc = "CommandFormCaravanDesc".Translate(),
-					icon = FormCaravanComp.FormCaravanCommand,
-					hotKey = KeyBindingDefOf.Misc2,
-					tutorTag = "FormCaravan",
-					action = delegate ()
-					{
-						Find.WindowStack.Add(new Dialog_FormCaravan(__instance.Map, false, null, false));
-					}
-				};
-		}
-	}*/
-
 	/*[HarmonyPatch(typeof(PawnNameColorUtility))]
 	[HarmonyPatch(nameof(PawnNameColorUtility.PawnNameColorOf))]
 	static class PawnNameColorUtility_PawnNameColorOf_Patch

@@ -15,8 +15,8 @@ namespace RimBattle
 			try
 			{
 				var uri = new Uri(baseUrl + "RimBattle");
-				var client = new System.Net.WebClient();
-				client.DownloadStringAsync(uri);
+				using (var client = new System.Net.WebClient())
+					client.DownloadStringAsync(uri);
 			}
 			catch (Exception)
 			{
