@@ -1,5 +1,4 @@
 ﻿using Harmony;
-using Multiplayer.API;
 using System.Reflection;
 using UnityEngine;
 using Verse;
@@ -26,11 +25,7 @@ namespace RimBattle
 		public RimBattleMod(ModContentPack content) : base(content)
 		{
 			Settings = GetSettings<RimBattleModSettings>();
-
-			if (MP.enabled)
-				MP.RegisterAll();
-			else
-				Log.Error("RimBattle needs Multiplayer to be enabled!");
+			Multiplayer.Init();
 		}
 
 		public override void DoSettingsWindowContents(Rect inRect)

@@ -1,4 +1,5 @@
-﻿using RimWorld;
+﻿using Harmony;
+using RimWorld;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -23,6 +24,8 @@ namespace RimBattle
 		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_startingTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("startingTile");
 		public static readonly FieldRef<LordJob_FormAndSendCaravan, int> LordJob_FormAndSendCaravan_destinationTile = FieldRefAccess<LordJob_FormAndSendCaravan, int>("destinationTile");
 		public static readonly FieldRef<LordJob_FormAndSendCaravan, IntVec3> LordJob_FormAndSendCaravan_exitSpot = FieldRefAccess<LordJob_FormAndSendCaravan, IntVec3>("exitSpot");
+
+		public static FastInvokeHandler PlaySoundOf = MethodInvoker.GetHandler(AccessTools.Method(typeof(TimeControls), "PlaySoundOf"));
 	}
 
 	class Defs

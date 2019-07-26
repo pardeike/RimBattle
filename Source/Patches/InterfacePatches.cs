@@ -12,7 +12,44 @@ namespace RimBattle
 {
 	using Instructions = IEnumerable<CodeInstruction>;
 
-	// getting our own OnGUI
+	// make speed control use cooperative speed
+	//
+	[HarmonyPatch(typeof(TimeControls))]
+	[HarmonyPatch(nameof(TimeControls.DoTimeControlsGUI))]
+	class TimeControls_DoTimeControlsGUI_Patch
+	{
+		static readonly MethodInfo m_ButtonImage = SymbolExtensions.GetMethodInfo(() => Widgets.ButtonImage(default, default));
+		static readonly MethodInfo m_MyButtonImage = SymbolExtensions.GetMethodInfo(() => ButtonImage(default, default, 0));
+		static bool ButtonImage(Rect butRect, Texture2D tex, int i)
+		{
+			_ = butRect; _ = tex;
+			if (Widgets.ButtonImage(butRect, tex))
+				Multiplayer.SetSpeed(Ref.controller.team, i);
+			return false;
+		}
+
+		static readonly MultiPatches multiPatches = new MultiPatches(
+			typeof(Hostility_MultiPatches),
+			new MultiPatchInfo(
+				SymbolExtensions.GetMethodInfo(() => TimeControls.DoTimeControlsGUI(default)),
+				m_ButtonImage, m_MyButtonImage,
+				(codes) => codes.Where(code => code.opcode == OpCodes.Ldloc_S).Take(1).Select(code => { code.opcode = OpCodes.Ldloc_S; return code; })
+			)
+		);
+
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			return multiPatches.TargetMethods();
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(MethodBase original, Instructions instructions)
+		{
+			return multiPatches.Transpile(original, instructions);
+		}
+	}
+
+	// remove manual prio checkbox
 	//
 	[HarmonyPatch(typeof(MainTabWindow_Work))]
 	[HarmonyPatch("DoManualPrioritiesCheckbox")]

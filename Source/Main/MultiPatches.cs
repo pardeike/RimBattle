@@ -13,14 +13,22 @@ namespace RimBattle
 		public MethodBase original;
 		public MethodInfo replaceFrom;
 		public MethodInfo replaceTo;
-		public CodeInstruction[] additionalInstructions;
+		public Func<IEnumerable<CodeInstruction>, IEnumerable<CodeInstruction>> argumentCodes;
 
-		public MultiPatchInfo(MethodBase original, MethodInfo replaceFrom, MethodInfo replaceTo, params CodeInstruction[] additionalInstructions)
+		public MultiPatchInfo(MethodBase original, MethodInfo replaceFrom, MethodInfo replaceTo, params CodeInstruction[] instructions)
 		{
 			this.original = original;
 			this.replaceFrom = replaceFrom;
 			this.replaceTo = replaceTo;
-			this.additionalInstructions = additionalInstructions;
+			argumentCodes = (_) => instructions.AsEnumerable();
+		}
+
+		public MultiPatchInfo(MethodBase original, MethodInfo replaceFrom, MethodInfo replaceTo, Func<IEnumerable<CodeInstruction>, IEnumerable<CodeInstruction>> argumentCodes)
+		{
+			this.original = original;
+			this.replaceFrom = replaceFrom;
+			this.replaceTo = replaceTo;
+			this.argumentCodes = argumentCodes;
 		}
 	}
 
@@ -82,8 +90,9 @@ namespace RimBattle
 					if (code.opcode == OpCodes.Call || code.opcode == OpCodes.Callvirt)
 						if (code.operand == multiPatch.replaceFrom)
 						{
-							codes.InsertRange(i, multiPatch.additionalInstructions);
-							i += multiPatch.additionalInstructions.Length;
+							var argumentCodes = multiPatch.argumentCodes(instructions).ToList();
+							codes.InsertRange(i, argumentCodes);
+							i += argumentCodes.Count;
 							code.operand = multiPatch.replaceTo;
 							found = true;
 						}

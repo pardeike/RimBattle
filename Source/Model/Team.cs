@@ -13,6 +13,7 @@ namespace RimBattle
 		public Color color;
 		public int ticketsLeft;
 		public HashSet<Pawn> members;
+		public int gameSpeed;
 
 		public Team() { }
 
@@ -24,6 +25,7 @@ namespace RimBattle
 			color = GenColor.RandomColorOpaque();
 			ticketsLeft = Statics.startTickets;
 			members = new HashSet<Pawn>();
+			gameSpeed = 1;
 		}
 
 		public void Add(Pawn pawn)
@@ -46,6 +48,7 @@ namespace RimBattle
 			Scribe_Values.Look(ref color, "color");
 			Scribe_Values.Look(ref ticketsLeft, "ticketsLeft");
 			Scribe_Collections.Look(ref members, false, "members", LookMode.Reference);
+			Scribe_Values.Look(ref gameSpeed, "gameSpeed");
 		}
 
 		public override string ToString()
