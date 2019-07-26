@@ -13,7 +13,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Page_SelectStartingSite))]
 	[HarmonyPatch("CanDoNext")]
-	static class Page_SelectStartingSite_CanDoNext_Patch
+	class Page_SelectStartingSite_CanDoNext_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(ref bool __result)
@@ -37,7 +37,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(WorldLayer_MouseTile))]
 	[HarmonyPatch("Tile", MethodType.Getter)]
-	static class WorldLayer_MouseTile_Tile_Patch
+	class WorldLayer_MouseTile_Tile_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(WorldLayer_MouseTile __instance, ref int __result)
@@ -54,7 +54,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Prefs))]
 	[HarmonyPatch(nameof(Prefs.MaxNumberOfPlayerSettlements), MethodType.Getter)]
-	static class Prefs_MaxNumberOfPlayerSettlements_Patch
+	class Prefs_MaxNumberOfPlayerSettlements_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(ref int __result)
@@ -68,7 +68,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(ScenPart_PlayerPawnsArriveMethod))]
 	[HarmonyPatch(nameof(ScenPart_PlayerPawnsArriveMethod.GenerateIntoMap))]
-	static class ScenPart_PlayerPawnsArriveMethod_GenerateIntoMap_Patch
+	class ScenPart_PlayerPawnsArriveMethod_GenerateIntoMap_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix()
@@ -81,7 +81,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Page_CreateWorldParams))]
 	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
-	static class Page_CreateWorldParams_PreOpen_Patch1
+	class Page_CreateWorldParams_PreOpen_Patch1
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix()
@@ -94,7 +94,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Page_CreateWorldParams))]
 	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
-	static class Page_CreateWorldParams_PreOpen_Patch2
+	class Page_CreateWorldParams_PreOpen_Patch2
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(ref float ___planetCoverage)
@@ -107,7 +107,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Page_CreateWorldParams))]
 	[HarmonyPatch(nameof(Page_CreateWorldParams.DoWindowContents))]
-	static class Page_CreateWorldParams_DoWindowContents_Patch
+	class Page_CreateWorldParams_DoWindowContents_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Rect rect)
@@ -120,7 +120,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(ScenPart_ConfigPage))]
 	[HarmonyPatch(nameof(ScenPart_ConfigPage.GetConfigPages))]
-	static class ScenPart_ConfigPage_GetConfigPages_Patch
+	class ScenPart_ConfigPage_GetConfigPages_Patch
 	{
 		[HarmonyPriority(10000)]
 		static IEnumerable<Page> Postfix(IEnumerable<Page> pages)
@@ -133,7 +133,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Game))]
 	[HarmonyPatch(nameof(Game.InitNewGame))]
-	static class Game_InitNewGame_Patch
+	class Game_InitNewGame_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix()

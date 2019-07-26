@@ -37,6 +37,13 @@ namespace RimBattle
 			return t;
 		}
 
+		public Team GetTeam(Pawn pawn)
+		{
+			var teamId = pawn.GetTeamID();
+			if (teamId < 0) return null;
+			return teams[teamId];
+		}
+
 		public bool IsMyTeam(int team)
 		{
 			return this.team == team;

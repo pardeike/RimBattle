@@ -90,7 +90,7 @@ namespace TranspilerHelpers
 		}
 	}
 
-	static class TranspilerHelpers
+	class TranspilerHelpers
 	{
 		public static Instruction Op(this OpCode opcode, object operand = null, Label label = default)
 		{

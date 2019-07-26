@@ -15,7 +15,7 @@ using Verse.Steam;
 namespace RimBattle
 {
 	[StaticConstructorOnStartup]
-	static class CrossPromotion
+	class CrossPromotion
 	{
 		const string _crosspromotion = "brrainz-crosspromotion";
 		internal const ulong userID = 76561197973010050;

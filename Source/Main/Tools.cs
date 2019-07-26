@@ -665,5 +665,24 @@ namespace RimBattle
 			var path = Path.Combine(folder, $"{name}.dat");
 			File.WriteAllBytes(path, data);
 		}
+
+		// kill messages
+		//
+		/*public static Tale KillMessage(Pawn killer, Pawn victim, DamageInfo dinfo)
+		{
+			if (dinfo.Weapon == null)
+				return TaleFactory.MakeRawTale(TaleDefOf.KilledBy, new object[] { killer, victim });
+
+			if (dinfo.Weapon.building != null && dinfo.Weapon.building.IsMortar)
+				return TaleFactory.MakeRawTale(TaleDefOf.KilledMortar, new object[] { killer, victim, dinfo.Weapon });
+
+			if (dinfo.Weapon.IsMeleeWeapon)
+				return TaleFactory.MakeRawTale(TaleDefOf.KilledMelee, new object[] { killer, victim, dinfo.Weapon });
+
+			if (killer.Position.DistanceTo(victim.Position) >= 35f)
+				return TaleFactory.MakeRawTale(TaleDefOf.KilledLongRange, new object[] { killer, victim, dinfo.Weapon });
+
+			return TaleFactory.MakeRawTale(TaleDefOf.KilledColonist, new object[] { killer, victim });
+		}*/
 	}
 }

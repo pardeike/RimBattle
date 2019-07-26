@@ -11,7 +11,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(UIRoot))]
 	[HarmonyPatch(nameof(UIRoot.UIRootOnGUI))]
-	static class UIRoot_UIRootOnGUI_Patch
+	class UIRoot_UIRootOnGUI_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix()
@@ -24,7 +24,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(ColonistBar))]
 	[HarmonyPatch(nameof(ColonistBar.ColonistBarOnGUI))]
-	static class ColonistBar_ColonistBarOnGUI_Patch
+	class ColonistBar_ColonistBarOnGUI_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix()
@@ -38,7 +38,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(GenMapUI))]
 	[HarmonyPatch("DrawPawnLabel")]
 	[HarmonyPatch(new[] { typeof(Pawn), typeof(Rect), typeof(float), typeof(float), typeof(Dictionary<string, string>), typeof(GameFont), typeof(bool), typeof(bool) })]
-	static class GenMapUI_DrawPawnLabel_Patch
+	class GenMapUI_DrawPawnLabel_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix()
@@ -51,7 +51,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(DefGenerator))]
 	[HarmonyPatch(nameof(DefGenerator.GenerateImpliedDefs_PostResolve))]
-	static class DefGenerator_GenerateImpliedDefs_PostResolve_Patch
+	class DefGenerator_GenerateImpliedDefs_PostResolve_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix()
@@ -72,7 +72,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(MainButtonsRoot))]
 	[HarmonyPatch(MethodType.Constructor)]
-	static class MainButtonsRoot_Constructor_Patch
+	class MainButtonsRoot_Constructor_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(List<MainButtonDef> ___allButtonsInOrder)
@@ -87,7 +87,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(StatExtension))]
 	[HarmonyPatch(nameof(StatExtension.GetStatValue))]
 	[HarmonyPatch(new[] { typeof(Thing), typeof(StatDef), typeof(bool) })]
-	static class StatExtension_GetStatValue_Patch
+	class StatExtension_GetStatValue_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(ref float __result, Thing thing, StatDef stat)
@@ -101,7 +101,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(StatExtension))]
 	[HarmonyPatch(nameof(StatExtension.GetStatValueAbstract))]
 	[HarmonyPatch(new[] { typeof(BuildableDef), typeof(StatDef), typeof(ThingDef) })]
-	static class StatExtension_GetStatValueAbstract_Patch
+	class StatExtension_GetStatValueAbstract_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(ref float __result, StatDef stat)
@@ -115,7 +115,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(InteractionWorker_RecruitAttempt))]
 	[HarmonyPatch(nameof(InteractionWorker_RecruitAttempt.DoRecruit))]
 	[HarmonyPatch(new[] { typeof(Pawn), typeof(Pawn), typeof(float), typeof(string), typeof(string), typeof(bool), typeof(bool) }, new ArgumentType[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Out, ArgumentType.Out, ArgumentType.Normal, ArgumentType.Normal })]
-	static class InteractionWorker_RecruitAttempt_DoRecruit_Patch
+	class InteractionWorker_RecruitAttempt_DoRecruit_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix(ref float recruitChance)
@@ -128,7 +128,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(RelationsUtility))]
 	[HarmonyPatch(nameof(RelationsUtility.TryDevelopBondRelation))]
-	static class RelationsUtility_TryDevelopBondRelation_Patch
+	class RelationsUtility_TryDevelopBondRelation_Patch
 	{
 		/* we could make this 100% bonding
 		 * 
@@ -150,7 +150,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(GenConstruct))]
 	[HarmonyPatch(nameof(GenConstruct.CanConstruct))]
-	static class GenConstruct_CanConstruct_Patch
+	class GenConstruct_CanConstruct_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix(ref bool checkConstructionSkill)
@@ -162,7 +162,7 @@ namespace RimBattle
 	// allow anyone to craft
 	//
 	[HarmonyPatch]
-	static class RecipeDef_PawnSatisfiesSkillRequirements_Patch
+	class RecipeDef_PawnSatisfiesSkillRequirements_Patch
 	{
 		static IEnumerable<MethodBase> TargetMethods()
 		{

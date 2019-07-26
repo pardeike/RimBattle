@@ -4,7 +4,7 @@
 
 	/*[HarmonyPatch(typeof(MapInterface))]
 	[HarmonyPatch(nameof(MapInterface.Notify_SwitchedMap))]
-	static class MapInterface_Notify_SwitchedMap_Patch
+	class MapInterface_Notify_SwitchedMap_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix()
@@ -15,7 +15,7 @@
 
 	/*[HarmonyPatch(typeof(DynamicDrawManager))]
 	[HarmonyPatch(nameof(DynamicDrawManager.DrawDynamicThings))]
-	static class DynamicDrawManager_DrawDynamicThings_Patch
+	class DynamicDrawManager_DrawDynamicThings_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix(HashSet<Thing> ___drawThings, out List<Thing> __state)
@@ -34,7 +34,7 @@
 
 	/*[HarmonyPatch(typeof(PawnNameColorUtility))]
 	[HarmonyPatch(nameof(PawnNameColorUtility.PawnNameColorOf))]
-	static class PawnNameColorUtility_PawnNameColorOf_Patch
+	class PawnNameColorUtility_PawnNameColorOf_Patch
 	{
 		static bool Prefix(Pawn pawn, ref Color __result)
 		{
@@ -52,7 +52,7 @@
 	//
 	//[HarmonyPatch(typeof(FogGrid))]
 	//[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(IntVec3) })]
-	//static class FogGrid_IsFogged1_Patch
+	//class FogGrid_IsFogged1_Patch
 	//{
 	//	static bool Prefix(Map ___map, IntVec3 c, ref bool __result)
 	//	{
@@ -76,7 +76,7 @@
 	//
 	//[HarmonyPatch(typeof(FogGrid))]
 	//[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(int) })]
-	//static class FogGrid_IsFogged2_Patch
+	//class FogGrid_IsFogged2_Patch
 	//{
 	//	static bool Prefix(Map ___map, int index, ref bool __result)
 	//	{

@@ -16,7 +16,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(MainTabWindow_Work))]
 	[HarmonyPatch("DoManualPrioritiesCheckbox")]
-	static class MainTabWindow_Work_DoManualPrioritiesCheckbox_Patch
+	class MainTabWindow_Work_DoManualPrioritiesCheckbox_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix()
@@ -34,7 +34,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(MainTabWindow_PawnTable))]
 	[HarmonyPatch("Pawns", MethodType.Getter)]
-	static class MainTabWindow_PawnTable_Pawns_Patch
+	class MainTabWindow_PawnTable_Pawns_Patch
 	{
 		[HarmonyPriority(10000)]
 		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
@@ -49,7 +49,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(MainTabWindow_Animals))]
 	[HarmonyPatch("Pawns", MethodType.Getter)]
-	static class MainTabWindow_Animals_Pawns_Patch
+	class MainTabWindow_Animals_Pawns_Patch
 	{
 		[HarmonyPriority(10000)]
 		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
@@ -66,7 +66,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(TrainableUtility))]
 	[HarmonyPatch("MasterSelectButton_GenerateMenu")]
-	static class TrainableUtility_MasterSelectButton_GenerateMenu_Patch
+	class TrainableUtility_MasterSelectButton_GenerateMenu_Patch
 	{
 		[HarmonyPriority(10000)]
 		static IEnumerable<Widgets.DropdownMenuElement<Pawn>> Postfix(IEnumerable<Widgets.DropdownMenuElement<Pawn>> menuItems)
@@ -78,12 +78,28 @@ namespace RimBattle
 
 	// hide alerts that don't contain at least one team member
 	//
-	[HarmonyPatch(typeof(Alert))]
-	[HarmonyPatch(nameof(Alert.DrawAt))]
-	static class Alert_DrawAt_Patch
+	[HarmonyPatch(typeof(Messages))]
+	[HarmonyPatch("AcceptsMessage")]
+	class Messages_AcceptsMessage_Patch
 	{
 		[HarmonyPriority(10000)]
-		static bool Prefix(Alert __instance)
+		static void Postfix(LookTargets lookTargets, ref bool __result)
+		{
+			if (__result == false)
+				return;
+			if (lookTargets.targets.Any(target => target.HasThing && target.Thing is Pawn pawn && Ref.controller.InMyTeam(pawn)) == false)
+				__result = false;
+		}
+	}
+
+	// hide alerts that don't contain at least one team member
+	//
+	[HarmonyPatch(typeof(Alert))]
+	[HarmonyPatch(nameof(Alert.DrawAt))]
+	class Alert_DrawAt_Patch
+	{
+		[HarmonyPriority(10000)]
+		static bool Prefix(Alert __instance, ref Rect __result)
 		{
 			if (__instance.Active == false)
 				return true;
@@ -92,10 +108,14 @@ namespace RimBattle
 			if (culprits == null)
 				return true;
 
-			return culprits
+			var result = culprits
 				.Select(culprit => culprit.Thing)
 				.OfType<Pawn>()
 				.Any(pawn => Ref.controller.InMyTeam(pawn));
+
+			if (result == false)
+				__result = Rect.zero;
+			return result;
 		}
 
 		static IEnumerable<GlobalTargetInfo> OnlyMyTeamCulprits(IEnumerable<GlobalTargetInfo> culprits)
@@ -126,7 +146,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(TargetHighlighter))]
 	[HarmonyPatch(nameof(TargetHighlighter.Highlight))]
-	static class TargetHighlighter_Highlight_Patch
+	class TargetHighlighter_Highlight_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(GlobalTargetInfo target)
@@ -146,7 +166,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Pawn))]
 	[HarmonyPatch(nameof(Pawn.TryGetAttackVerb))]
-	static class Pawn_TryGetAttackVerb_Patch
+	class Pawn_TryGetAttackVerb_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix(ref bool allowManualCastWeapons)
@@ -159,7 +179,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(SickPawnVisitUtility))]
 	[HarmonyPatch(nameof(SickPawnVisitUtility.CanVisit))]
-	static class SickPawnVisitUtility_CanVisit_Patch
+	class SickPawnVisitUtility_CanVisit_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Pawn pawn, Pawn sick, ref bool __result)
@@ -175,7 +195,7 @@ namespace RimBattle
 	// make other team members show the same UX like non-colonists (1)
 	//
 	[HarmonyPatch]
-	static class Pawn_IsColonist_Patch
+	class Pawn_IsColonist_Patch
 	{
 		static IEnumerable<MethodBase> TargetMethods()
 		{
@@ -214,7 +234,7 @@ namespace RimBattle
 	// make other team members show the same UX like non-colonists (2)
 	//
 	[HarmonyPatch]
-	static class MapPawn_FreeColonistsSpawned_Patch
+	class MapPawn_FreeColonistsSpawned_Patch
 	{
 		static IEnumerable<MethodBase> TargetMethods()
 		{
@@ -238,7 +258,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(MainTabWindow_Inspect))]
 	[HarmonyPatch("DoInspectPaneButtons")]
-	static class MainTabWindow_Inspect_DoInspectPaneButtons_Patch
+	class MainTabWindow_Inspect_DoInspectPaneButtons_Patch
 	{
 		static bool UsesMyConfigurableHostilityResponse(Pawn_PlayerSettings playerSettings)
 		{
@@ -262,7 +282,7 @@ namespace RimBattle
 	// remove schedule and restrict buttons from non team members 
 	//
 	[HarmonyPatch]
-	static class InspectPaneFiller_DrawAreaAllowed_Patch
+	class InspectPaneFiller_DrawAreaAllowed_Patch
 	{
 		static IEnumerable<MethodBase> TargetMethods()
 		{
@@ -283,7 +303,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(HealthCardUtility))]
 	[HarmonyPatch("DrawOverviewTab")]
-	static class HealthCardUtility_DrawOverviewTab_Patch
+	class HealthCardUtility_DrawOverviewTab_Patch
 	{
 		static bool ConfigurableIfOurTeam(Pawn_FoodRestrictionTracker tracker)
 		{
@@ -321,7 +341,7 @@ namespace RimBattle
 	// disable storage control of enemy team members
 	//
 	[HarmonyPatch]
-	static class ITab_Patches
+	class ITab_Patches
 	{
 		static IEnumerable<MethodBase> TargetMethods()
 		{
@@ -344,7 +364,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(VerbTracker))]
 	[HarmonyPatch("CreateVerbTargetCommand")]
-	static class VerbTracker_CreateVerbTargetCommand_Patch
+	class VerbTracker_CreateVerbTargetCommand_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Verb verb, Command_VerbTarget __result)
@@ -358,7 +378,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Pawn))]
 	[HarmonyPatch(nameof(Pawn.GetGizmos))]
-	static class Pawn_GetGizmos_Patch
+	class Pawn_GetGizmos_Patch
 	{
 		[HarmonyPriority(10000)]
 		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, Pawn __instance)
@@ -374,10 +394,7 @@ namespace RimBattle
 			}
 
 			foreach (var gizmo in gizmos)
-			{
-				Log.Warning($"{__instance.Name.ToStringShort} {gizmo} visible={gizmo.Visible} disabled-reason={gizmo.disabledReason}");
 				yield return gizmo;
-			}
 		}
 	}
 
@@ -385,7 +402,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(FloatMenuMakerMap))]
 	[HarmonyPatch("CanTakeOrder")]
-	static class FloatMenuMakerMap_CanTakeOrder_Patch
+	class FloatMenuMakerMap_CanTakeOrder_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Pawn pawn, ref bool __result)
@@ -397,4 +414,60 @@ namespace RimBattle
 				__result = false;
 		}
 	}
+
+	// kill feed
+	//
+	[HarmonyPatch(typeof(Pawn))]
+	[HarmonyPatch(nameof(Pawn.Kill))]
+	class Pawn_Kill_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(Pawn __instance, DamageInfo? dinfo)
+		{
+			if (dinfo == null) return;
+			var killer = dinfo.Value.Instigator as Pawn;
+			if (killer == null) return;
+
+			//var teamKiller = Ref.controller.GetTeam(killer);
+			//var teamKilled = Ref.controller.GetTeam(__instance);
+			var weapon = "";
+			if (dinfo.Value.Weapon != null)
+				weapon = "with " + Find.ActiveLanguageWorker.WithIndefiniteArticle(dinfo.Value.Weapon.label, killer.gender);
+
+			//var message = $"{killer.Name.ToStringShort} of {teamKiller.name} killed {__instance.Name.ToStringShort} of {teamKilled.name} {weapon}";
+			var message = $"{killer.Name.ToStringShort} killed {__instance.Name.ToStringShort} {weapon}";
+			Messages.Message(message, killer, MessageTypeDefOf.PositiveEvent, true);
+		}
+	}
+
+	// suppress other teams colonist died alerts
+	//
+	[HarmonyPatch(typeof(LetterStack))]
+	[HarmonyPatch(nameof(LetterStack.ReceiveLetter))]
+	[HarmonyPatch(new[] { typeof(string), typeof(string), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(string) })]
+	class Pawn_HealthTracker_NotifyPlayerOfKilled_Patch
+	{
+		[HarmonyPriority(10000)]
+		static bool Prefix(LookTargets lookTargets)
+		{
+			var target = lookTargets.PrimaryTarget;
+			if (target.HasThing == false) return true;
+			var pawn = target.Thing as Pawn;
+			if (pawn == null) return true;
+			return Ref.controller.InMyTeam(pawn);
+		}
+	}
+
+	/* rescue message only for our team
+	//
+	[HarmonyPatch(typeof(Alert_ColonistNeedsRescuing))]
+	[HarmonyPatch("ColonistsNeedingRescue")]
+	class Alert_ColonistNeedsRescuing_ColonistsNeedingRescue_Patch
+	{
+		[HarmonyPriority(10000)]
+		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
+		{
+			return pawns.Where(pawn => Ref.controller.InMyTeam(pawn));
+		}
+	}*/
 }

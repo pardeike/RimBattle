@@ -5,7 +5,7 @@ namespace RimBattle
 {
 	// TODO: make these work with a transpiler
 	//
-	static class CopiedMethods
+	class CopiedMethods
 	{
 		// fog regeneration with extra visibility injected
 		//

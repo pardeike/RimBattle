@@ -6,7 +6,7 @@ using static Harmony.AccessTools;
 
 namespace RimBattle
 {
-	static class Ref
+	class Ref
 	{
 		public static GameController controller;
 
@@ -25,7 +25,7 @@ namespace RimBattle
 		public static readonly FieldRef<LordJob_FormAndSendCaravan, IntVec3> LordJob_FormAndSendCaravan_exitSpot = FieldRefAccess<LordJob_FormAndSendCaravan, IntVec3>("exitSpot");
 	}
 
-	static class Defs
+	class Defs
 	{
 		public static readonly KeyBindingDef BattleMap = new KeyBindingDef()
 		{
@@ -50,7 +50,7 @@ namespace RimBattle
 	}
 
 	[StaticConstructorOnStartup]
-	static class Statics
+	class Statics
 	{
 		// ---#3#-#2#---
 		// -#4#-#0#-#1#-

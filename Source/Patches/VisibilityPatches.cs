@@ -17,7 +17,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Thing))]
 	[HarmonyPatch(nameof(Thing.Position), MethodType.Setter)]
-	static class Thing_Position_Patch
+	class Thing_Position_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix(Thing __instance, IntVec3 value, IntVec3 ___positionInt)
@@ -31,7 +31,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Thing))]
 	[HarmonyPatch(nameof(Thing.SetPositionDirect))]
-	static class Thing_SetPositionDirect_Patch
+	class Thing_SetPositionDirect_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix(Thing __instance, IntVec3 newPos, IntVec3 ___positionInt)
@@ -45,7 +45,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Pawn_DraftController))]
 	[HarmonyPatch("Notify_PrimaryWeaponChanged")]
-	static class MapPawns_RegisterPawn_Patch
+	class MapPawns_RegisterPawn_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Pawn ___pawn)
@@ -60,7 +60,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(PawnRenderer))]
 	[HarmonyPatch("RenderPawnInternal")]
 	[HarmonyPatch(new[] { typeof(Vector3), typeof(float), typeof(bool), typeof(Rot4), typeof(Rot4), typeof(RotDrawMode), typeof(bool), typeof(bool) })]
-	static class PawnRenderer_RenderPawnInternal_Patch
+	class PawnRenderer_RenderPawnInternal_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn ___pawn, out bool __state)
@@ -94,7 +94,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(ToilEffects))]
 	[HarmonyPatch(nameof(ToilEffects.WithProgressBar))]
-	static class ToilEffects_WithProgressBar_Patch
+	class ToilEffects_WithProgressBar_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Toil toil)
@@ -114,7 +114,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(ToilEffects))]
 	[HarmonyPatch(nameof(ToilEffects.WithEffect))]
 	[HarmonyPatch(new[] { typeof(Toil), typeof(Func<EffecterDef>), typeof(Func<LocalTargetInfo>) })]
-	static class ToilEffects_WithEffect_Patch
+	class ToilEffects_WithEffect_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Toil toil)
@@ -133,7 +133,7 @@ namespace RimBattle
 	// 
 	[HarmonyPatch(typeof(Graphic))]
 	[HarmonyPatch("Draw")]
-	static class Graphic_Draw_Patch
+	class Graphic_Draw_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Thing thing)
@@ -151,7 +151,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Selector))]
 	[HarmonyPatch(nameof(Selector.Select))]
-	static class Selector_Select_Patch
+	class Selector_Select_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(object obj, bool forceDesignatorDeselect)
@@ -166,7 +166,7 @@ namespace RimBattle
 	// disallow designation in cells that are not visible
 	//
 	[HarmonyPatch]
-	static class Designator_Cell_Patch
+	class Designator_Cell_Patch
 	{
 		static bool IsVisible(Map map, IntVec3 loc)
 		{
@@ -205,7 +205,7 @@ namespace RimBattle
 	// disallow designating things that are not visible
 	//
 	[HarmonyPatch]
-	static class Designator_Thing_Patch
+	class Designator_Thing_Patch
 	{
 		static bool IsVisible(Thing thing)
 		{
@@ -243,7 +243,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(PlayerPawnsDisplayOrderUtility))]
 	[HarmonyPatch(nameof(PlayerPawnsDisplayOrderUtility.Sort))]
-	static class PlayerPawnsDisplayOrderUtility_Sort_Patch
+	class PlayerPawnsDisplayOrderUtility_Sort_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Prefix(List<Pawn> pawns)
@@ -259,7 +259,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(PawnUIOverlay))]
 	[HarmonyPatch(nameof(PawnUIOverlay.DrawPawnGUIOverlay))]
-	static class PawnUIOverlay_DrawPawnGUIOverlay_Patch
+	class PawnUIOverlay_DrawPawnGUIOverlay_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn ___pawn)
@@ -276,7 +276,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Thing))]
 	[HarmonyPatch(nameof(Thing.DrawGUIOverlay))]
-	static class Thing_DrawGUIOverlay_Patch
+	class Thing_DrawGUIOverlay_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Thing __instance)
@@ -290,7 +290,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(ThingOverlays))]
 	[HarmonyPatch(nameof(ThingOverlays.ThingOverlaysOnGUI))]
-	static class ThingOverlays_ThingOverlaysOnGUI_Patch
+	class ThingOverlays_ThingOverlaysOnGUI_Patch
 	{
 		static bool IsFogged(FogGrid grid, IntVec3 c)
 		{
@@ -315,7 +315,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(GenSpawn))]
 	[HarmonyPatch(nameof(GenSpawn.Spawn))]
 	[HarmonyPatch(new[] { typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool) })]
-	static class GenSpawn_Spawn_Patch
+	class GenSpawn_Spawn_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Thing newThing, IntVec3 loc, Map map, ref Thing __result)
@@ -335,7 +335,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(SectionLayer_FogOfWar))]
 	[HarmonyPatch(nameof(SectionLayer_FogOfWar.Regenerate))]
-	static class SectionLayer_FogOfWar_Regenerate__Patch
+	class SectionLayer_FogOfWar_Regenerate__Patch
 	{
 		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
@@ -352,7 +352,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(OverlayDrawer))]
 	[HarmonyPatch(nameof(OverlayDrawer.DrawAllOverlays))]
-	static class OverlayDrawer_DrawAllOverlays_Patch
+	class OverlayDrawer_DrawAllOverlays_Patch
 	{
 		static bool IsVisible(Thing key)
 		{
@@ -382,7 +382,7 @@ namespace RimBattle
 	// hide zones if not discovered
 	//
 	[HarmonyPatch]
-	static class SectionLayer_Zones_Regenerate_Patch
+	class SectionLayer_Zones_Regenerate_Patch
 	{
 		// jeez, why is this class internal
 		static MethodBase TargetMethod()

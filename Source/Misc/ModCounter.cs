@@ -2,7 +2,7 @@
 
 namespace RimBattle
 {
-	static class ModCounter
+	class ModCounter
 	{
 		// a very simple and gdpr friendly mod launch counter.
 		// no personal information is transfered and firebase

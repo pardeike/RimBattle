@@ -18,7 +18,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(GenHostility))]
 	[HarmonyPatch(nameof(GenHostility.HostileTo))]
 	[HarmonyPatch(new[] { typeof(Thing), typeof(Thing) })]
-	static class GenHostility_HostileTo_Patch
+	class GenHostility_HostileTo_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Thing a, Thing b, ref bool __result)
@@ -38,7 +38,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(GenHostility))]
 	[HarmonyPatch(nameof(GenHostility.IsActiveThreatToPlayer))]
-	static class GenHostility_IsActiveThreatToPlayer_Patch
+	class GenHostility_IsActiveThreatToPlayer_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(IAttackTarget target, ref bool __result)
@@ -57,7 +57,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Verb))]
 	[HarmonyPatch("CausesTimeSlowdown")]
-	static class Verb_CausesTimeSlowdown_Patch
+	class Verb_CausesTimeSlowdown_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Verb __instance, LocalTargetInfo castTarg, ref bool __result)
@@ -78,7 +78,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(GenHostility))]
 	[HarmonyPatch(nameof(GenHostility.AnyHostileActiveThreatTo))]
-	static class GenHostility_AnyHostileActiveThreatTo_Patch
+	class GenHostility_AnyHostileActiveThreatTo_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Map map, ref bool __result)
@@ -95,7 +95,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(AttackTargetsCache))]
 	[HarmonyPatch(nameof(AttackTargetsCache.GetPotentialTargetsFor))]
-	static class AttackTargetsCache_GetPotentialTargetsFor_Patch
+	class AttackTargetsCache_GetPotentialTargetsFor_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(IAttackTargetSearcher th, ref List<IAttackTarget> __result)
@@ -112,7 +112,7 @@ namespace RimBattle
 	// - handle indiviual cases
 	//
 	[HarmonyPatch]
-	static class Hostility_MultiPatches
+	class Hostility_MultiPatches
 	{
 		// replace from
 
@@ -153,9 +153,10 @@ namespace RimBattle
 		static TargetingParameters MyForAttackHostile()
 		{
 			var targetingParams = TargetingParameters.ForAttackHostile();
+			var validator = targetingParams.validator;
 			targetingParams.validator = delegate (TargetInfo targ)
 			{
-				var result = targetingParams.validator(targ);
+				var result = validator(targ);
 				if (result) return true;
 				return targ.HasThing && targ.Thing is Pawn p && p.IsColonist && Ref.controller.InMyTeam(p) == false;
 			};

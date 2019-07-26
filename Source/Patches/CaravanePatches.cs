@@ -19,7 +19,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(InspectGizmoGrid))]
 	[HarmonyPatch(nameof(InspectGizmoGrid.DrawInspectGizmoGridFor))]
-	static class InspectGizmoGrid_DrawInspectGizmoGridFor_Patch
+	class InspectGizmoGrid_DrawInspectGizmoGridFor_Patch
 	{
 		static void ClearAndAddOurGizmo(List<Gizmo> list, IEnumerable<object> selectedObjects)
 		{
@@ -54,7 +54,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch(nameof(Dialog_FormCaravan.InitialSize), MethodType.Getter)]
-	static class Dialog_FormCaravan_InitialSize_Patch
+	class Dialog_FormCaravan_InitialSize_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(ref Vector2 __result)
@@ -67,7 +67,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch("MustChooseRoute", MethodType.Getter)]
-	static class Dialog_FormCaravan_MustChooseRoute_Patch
+	class Dialog_FormCaravan_MustChooseRoute_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(ref bool __result)
@@ -82,7 +82,7 @@ namespace RimBattle
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch("TryFindExitSpot")]
 	[HarmonyPatch(new[] { typeof(List<Pawn>), typeof(bool), typeof(IntVec3) }, new[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Out })]
-	static class Dialog_FormCaravan_TryFindExitSpot_Patch
+	class Dialog_FormCaravan_TryFindExitSpot_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Dialog_FormCaravan __instance, ref bool __result, List<Pawn> pawns, bool reachableForEveryColonist, out IntVec3 spot)
@@ -109,7 +109,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(LordManager))]
 	[HarmonyPatch("RemoveLord")]
-	static class LordManager_RemoveLord_Patch
+	class LordManager_RemoveLord_Patch
 	{
 		static bool Prefix(Lord oldLord)
 		{
@@ -122,7 +122,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(CaravanEnterMapUtility))]
 	[HarmonyPatch("GetEnterCell")]
-	static class CaravanEnterMapUtility_GetEnterCell_Patch
+	class CaravanEnterMapUtility_GetEnterCell_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(Caravan caravan, CaravanEnterMode enterMode, ref IntVec3 __result)
@@ -159,7 +159,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(CaravanFormingUtility))]
 	[HarmonyPatch(nameof(CaravanFormingUtility.StartFormingCaravan))]
-	static class CaravanFormingUtility_StartFormingCaravan_Patch
+	class CaravanFormingUtility_StartFormingCaravan_Patch
 	{
 		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
@@ -193,7 +193,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Caravan_PathFollower))]
 	[HarmonyPatch("SetupMoveIntoNextTile")]
-	static class Caravan_PathFollower_AtDestinationPosition_Patch
+	class Caravan_PathFollower_AtDestinationPosition_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(ref Caravan_PathFollower __instance)
@@ -208,7 +208,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(CaravanArrivalAction_Enter))]
 	[HarmonyPatch(nameof(CaravanArrivalAction_Enter.Arrived))]
-	static class CaravanArrivalAction_Enter_Arrived_Patch
+	class CaravanArrivalAction_Enter_Arrived_Patch
 	{
 		public static void ReceiveLetter_Empty(LetterStack stack, string label, string text, LetterDef textLetterDef, LookTargets lookTargets, Faction relatedFaction, string debugInfo)
 		{
@@ -232,7 +232,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch("TryFormAndSendCaravan")]
-	static class Dialog_FormCaravan_TryFormAndSendCaravan_Patch
+	class Dialog_FormCaravan_TryFormAndSendCaravan_Patch
 	{
 		static readonly MethodInfo m_TryFindRandomPackingSpot = AccessTools.Method(typeof(Dialog_FormCaravan), "TryFindRandomPackingSpot");
 
@@ -272,7 +272,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch(nameof(Dialog_FormCaravan.PostOpen))]
-	static class Dialog_FormCaravan_PostOpen_Patch
+	class Dialog_FormCaravan_PostOpen_Patch
 	{
 		[HarmonyPriority(10000)]
 		static void Postfix(Dialog_FormCaravan __instance, List<TransferableOneWay> ___transferables)
@@ -299,7 +299,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(CaravanUIUtility))]
 	[HarmonyPatch(nameof(CaravanUIUtility.CreateCaravanTransferableWidgets))]
-	static class CaravanUIUtility_CreateCaravanTransferableWidgets_Patch
+	class CaravanUIUtility_CreateCaravanTransferableWidgets_Patch
 	{
 		[HarmonyPriority(10000)]
 		static bool Prefix(List<TransferableOneWay> transferables, out TransferableOneWayWidget pawnsTransfer, out TransferableOneWayWidget itemsTransfer, string thingCountTip, IgnorePawnsInventoryMode ignorePawnInventoryMass, Func<float> availableMassGetter, bool ignoreSpawnedCorpsesGearAndInventoryMass, int tile, bool playerPawnsReadOnly)
@@ -329,7 +329,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch(nameof(Dialog_FormCaravan.DoWindowContents))]
-	static class Dialog_FormCaravan_DoWindowContents_Patch
+	class Dialog_FormCaravan_DoWindowContents_Patch
 	{
 		public static float miniMapDialogHeight = 200f;
 
@@ -386,7 +386,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch("DaysWorthOfFood", MethodType.Getter)]
-	static class Dialog_FormCaravan_DaysWorthOfFood_Patch
+	class Dialog_FormCaravan_DaysWorthOfFood_Patch
 	{
 		static bool Prefix(ref Pair<float, float> __result)
 		{
@@ -399,7 +399,7 @@ namespace RimBattle
 	//
 	[HarmonyPatch(typeof(Dialog_FormCaravan))]
 	[HarmonyPatch("DoBottomButtons")]
-	static class Dialog_FormCaravan_DoBottomButtons_Patch
+	class Dialog_FormCaravan_DoBottomButtons_Patch
 	{
 		static readonly Vector2 BottomButtonSize = new Vector2(160f, 40f);
 
