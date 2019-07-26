@@ -34,7 +34,9 @@
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Patches\HositilityPatches.cs" />
     <Compile Include="Patches\InterfacePatches.cs" />
+    <Compile Include="Main\MultiPatches.cs" />
     <Compile Include="UX\BattleOverview.cs" />
     <Compile Include="UX\ConfigGUI.cs" />
     <Compile Include="Patches\CopiedMethods.cs" />

@@ -125,6 +125,11 @@ namespace RimBattle
 			new[] { 0, 1, 5 },
 		};
 
+		public static readonly Faction[] fakeFactions = new Faction[7]
+		{
+			new Faction(), new Faction(), new Faction(), new Faction(), new Faction(), new Faction(), new Faction()
+		};
+
 		public const int forceMapSize = 120;
 		public const int startTickets = 100;
 
