@@ -47,27 +47,6 @@ namespace RimBattle
 		}
 	}
 
-	// adding vanilla keybindings
-	//
-	[HarmonyPatch(typeof(DefGenerator))]
-	[HarmonyPatch(nameof(DefGenerator.GenerateImpliedDefs_PostResolve))]
-	class DefGenerator_GenerateImpliedDefs_PostResolve_Patch
-	{
-		[HarmonyPriority(10000)]
-		static void Postfix()
-		{
-			AccessTools.GetDeclaredFields(typeof(Defs))
-				.Do(field =>
-				{
-					var def = field.GetValue(null);
-					if (def is KeyBindingDef keyDef)
-						DefDatabase<KeyBindingDef>.Add(keyDef);
-					if (def is MainButtonDef btnDef)
-						DefDatabase<MainButtonDef>.Add(btnDef);
-				});
-		}
-	}
-
 	// remove World tab
 	//
 	[HarmonyPatch(typeof(MainButtonsRoot))]

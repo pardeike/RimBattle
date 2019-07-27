@@ -49,6 +49,77 @@ namespace RimBattle
 		}
 	}
 
+	// remove toggle buttons with cooperative behaviour
+	//
+	[HarmonyPatch(typeof(WidgetRow))]
+	[HarmonyPatch(nameof(WidgetRow.ToggleableIcon))]
+	class WidgetRow_ToggleableIcon_Patch
+	{
+		[HarmonyPriority(10000)]
+		static bool Prefix(string tooltip)
+		{
+			return tooltip != "AutoHomeAreaToggleButton".Translate() && tooltip != "AutoRebuildButton".Translate();
+		}
+	}
+
+	// move all toggle buttons to one row
+	//
+	[HarmonyPatch(typeof(GlobalControlsUtility))]
+	[HarmonyPatch(nameof(GlobalControlsUtility.DoPlaySettings))]
+	class GlobalControlsUtility_DoPlaySettings_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Postfix(ref float curBaseY)
+		{
+			curBaseY -= 20f;
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(Instructions instructions)
+		{
+			return instructions.Select(code =>
+			{
+				if (code.opcode == OpCodes.Ldc_R4 && (float)code.operand >= 141f)
+					code.operand = 999f;
+				return code;
+			});
+		}
+	}
+
+	// show cooperative speeds
+	//
+	[HarmonyPatch(typeof(GlobalControlsUtility))]
+	[HarmonyPatch(nameof(GlobalControlsUtility.DoTimespeedControls))]
+	class GlobalControlsUtility_DoTimespeedControls_Patch
+	{
+		public static bool Prefix(float leftX, float width, ref float curBaseY)
+		{
+			leftX += Mathf.Max(0f, width - 150f);
+			width = Mathf.Min(width, 150f);
+
+			var teams = Ref.controller.teams;
+			var choices = 2f + 6f * teams.Count;
+
+			var y = TimeControls.TimeButSize.y;
+			var timerRect = new Rect(leftX + 16f, curBaseY - y, width, y + choices);
+
+			for (var speed = 0; speed < 4; speed++)
+			{
+				var rect = new Rect(leftX + 16f + speed * TimeControls.TimeButSize.x, curBaseY + 2f, TimeControls.TimeButSize.x, 2f);
+				foreach (var team in teams)
+				{
+					if (team.gameSpeed == speed)
+						Widgets.DrawBoxSolid(rect, Ref.TeamColors[team.id]);
+					rect.y += 4f;
+				}
+			}
+
+			TimeControls.DoTimeControlsGUI(timerRect);
+			curBaseY -= timerRect.height + choices;
+			return false;
+		}
+	}
+
 	// remove manual prio checkbox
 	//
 	[HarmonyPatch(typeof(MainTabWindow_Work))]

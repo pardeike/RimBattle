@@ -17,6 +17,14 @@ namespace RimBattle
 {
 	static class Tools
 	{
+		// null checks
+		//
+		public static void NullCheck(this string description, object value)
+		{
+			if (value == null)
+				Log.Error($"{description} is null");
+		}
+
 		// recreate new colonists
 		//
 		public static void AddNewColonistsToTeam(Team team)

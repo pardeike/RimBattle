@@ -11,7 +11,7 @@ namespace RimBattle
 #pragma warning disable CA1810
 		static RimBattlePatches()
 		{
-			HarmonyInstance.DEBUG = true;
+			// HarmonyInstance.DEBUG = true;
 			var harmony = HarmonyInstance.Create("net.pardeike.rimworld.mod.rimbattle");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
 		}
@@ -25,6 +25,7 @@ namespace RimBattle
 		public RimBattleMod(ModContentPack content) : base(content)
 		{
 			Settings = GetSettings<RimBattleModSettings>();
+			ToggleBattle.Patch();
 			Multiplayer.Init();
 		}
 

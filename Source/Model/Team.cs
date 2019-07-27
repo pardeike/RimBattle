@@ -1,6 +1,5 @@
 ﻿using RimWorld;
 using System.Collections.Generic;
-using UnityEngine;
 using Verse;
 
 namespace RimBattle
@@ -10,7 +9,6 @@ namespace RimBattle
 		public int id;
 		public Pawn master;
 		public string name;
-		public Color color;
 		public int ticketsLeft;
 		public HashSet<Pawn> members;
 		public int gameSpeed;
@@ -22,7 +20,6 @@ namespace RimBattle
 			this.id = id;
 			master = Tools.CreateTeamMaster();
 			name = NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker);
-			color = GenColor.RandomColorOpaque();
 			ticketsLeft = Ref.startTickets;
 			members = new HashSet<Pawn>();
 			gameSpeed = 1;
@@ -45,7 +42,6 @@ namespace RimBattle
 			Scribe_Values.Look(ref id, "id");
 			Scribe_References.Look(ref master, "master");
 			Scribe_Values.Look(ref name, "name");
-			Scribe_Values.Look(ref color, "color");
 			Scribe_Values.Look(ref ticketsLeft, "ticketsLeft");
 			Scribe_Collections.Look(ref members, false, "members", LookMode.Reference);
 			Scribe_Values.Look(ref gameSpeed, "gameSpeed");

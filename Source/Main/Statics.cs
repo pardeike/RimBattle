@@ -28,51 +28,51 @@ namespace RimBattle
 		};
 
 		public static readonly int[][][] teamTiles = new int[][][]
+		{
+			new [] // 1 tile
 			{
-				new [] // 1 tile
-				{
-					new[] { 0 }, // 1 team
-				},
-				new [] // 2 tiles
-				{
-					new[] { 0, 1 }, // 2 teams
-				},
-				new [] // 3 tiles
-				{
-					new[] { 4, 1 }, // 2 teams
-					new[] { 4, 0, 1 }, // 3 teams
-				},
-				new [] // 4 tiles
-				{
-					new[] { 3, 1 }, // 2 teams
-					new[] { 3, 2, 1 }, // 3 teams
-					new[] { 3, 2, 0, 1 }, // 4 teams
-				},
-				new [] // 5 tiles
-				{
-					new[] { 3, 6 }, // 2 teams
-					new[] { 3, 0, 6 }, // 3 teams
-					new[] { 3, 2, 5, 6 }, // 4 teams
-					new[] { 3, 2, 0, 5, 6 }, // 5 teams
-				},
-				new [] // 6 tiles
-				{
-					new[] { 3, 6 }, // 2 teams
-					new[] { 3, 1, 5 }, // 3 teams
-					new[] { 3, 2, 5, 6 }, // 4 teams
-					new[] { 3, 2, 1, 5, 6 }, // 5 teams
-					new[] { 3, 2, 0, 1, 5, 6 }, // 6 teams
-				},
-				new [] // 7 tiles
-				{
-					new[] { 4, 1 }, // 2 teams
-					new[] { 3, 1, 5 }, // 3 teams
-					new[] { 3, 2, 5, 6 }, // 4 teams
-					new[] { 3, 2, 0, 5, 6 }, // 5 teams
-					new[] { 3, 2, 4, 1, 5, 6 }, // 6 teams
-					new[] { 3,2, 4, 0, 1, 5, 6 }, // 7 teams
-				},
-			};
+				new[] { 0 }, // 1 team
+			},
+			new [] // 2 tiles
+			{
+				new[] { 0, 1 }, // 2 teams
+			},
+			new [] // 3 tiles
+			{
+				new[] { 4, 1 }, // 2 teams
+				new[] { 4, 0, 1 }, // 3 teams
+			},
+			new [] // 4 tiles
+			{
+				new[] { 3, 1 }, // 2 teams
+				new[] { 3, 2, 1 }, // 3 teams
+				new[] { 3, 2, 0, 1 }, // 4 teams
+			},
+			new [] // 5 tiles
+			{
+				new[] { 3, 6 }, // 2 teams
+				new[] { 3, 0, 6 }, // 3 teams
+				new[] { 3, 2, 5, 6 }, // 4 teams
+				new[] { 3, 2, 0, 5, 6 }, // 5 teams
+			},
+			new [] // 6 tiles
+			{
+				new[] { 3, 6 }, // 2 teams
+				new[] { 3, 1, 5 }, // 3 teams
+				new[] { 3, 2, 5, 6 }, // 4 teams
+				new[] { 3, 2, 1, 5, 6 }, // 5 teams
+				new[] { 3, 2, 0, 1, 5, 6 }, // 6 teams
+			},
+			new [] // 7 tiles
+			{
+				new[] { 4, 1 }, // 2 teams
+				new[] { 3, 1, 5 }, // 3 teams
+				new[] { 3, 2, 5, 6 }, // 4 teams
+				new[] { 3, 2, 0, 5, 6 }, // 5 teams
+				new[] { 3, 2, 4, 1, 5, 6 }, // 6 teams
+				new[] { 3,2, 4, 0, 1, 5, 6 }, // 7 teams
+			},
+		};
 
 		public static readonly int[][] adjactedTiles = new int[][]
 		{
@@ -123,30 +123,6 @@ namespace RimBattle
 		public static readonly Color groundColor = new ColorInt(100, 77, 58).ToColor;
 		public static readonly Color mountainColor = new ColorInt(58, 63, 63).ToColor;
 		public static readonly Color animalColor = new ColorInt(128, 128, 128).ToColor;
-	}
-
-	class Defs
-	{
-		public static readonly KeyBindingDef BattleMap = new KeyBindingDef()
-		{
-			label = "Toggle battle map tab",
-			defName = "MainTab_Battle",
-			category = KeyBindingCategoryDefOf.MainTabs,
-			defaultKeyCodeA = KeyCode.Tab,
-			defaultKeyCodeB = KeyCode.BackQuote,
-			modContentPack = MainButtonDefOf.Architect.modContentPack
-		};
-
-		public static readonly MainButtonDef Battle = new MainButtonDef()
-		{
-			defName = "Battle",
-			label = "battle",
-			description = "Shows the main battle overview with its 7 maps and possible spawns.",
-			workerClass = typeof(ToggleBattle),
-			order = 100,
-			defaultHotKey = KeyCode.F12,
-			validWithoutMap = true
-		};
 	}
 
 	[StaticConstructorOnStartup]

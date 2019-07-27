@@ -113,7 +113,7 @@ namespace RimBattle
 
 		public void OnGUI()
 		{
-			if (Defs.BattleMap.KeyDownEvent)
+			if (ToggleBattle.BattleMap?.KeyDownEvent ?? false)
 			{
 				Event.current.Use();
 				ToggleBattle.Toggle();
