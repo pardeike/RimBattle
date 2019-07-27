@@ -49,6 +49,8 @@ namespace RimBattle
 			return this.team == team;
 		}
 
+		public Team CurrentTeam => teams[team];
+
 		public void CreateMapPart(Map map)
 		{
 			mapSize = map.Size.x;

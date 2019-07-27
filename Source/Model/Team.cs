@@ -11,6 +11,8 @@ namespace RimBattle
 		public string name;
 		public int ticketsLeft;
 		public HashSet<Pawn> members;
+
+		public int previousSpeed;
 		public int gameSpeed;
 
 		public Team() { }
@@ -22,7 +24,8 @@ namespace RimBattle
 			name = NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker);
 			ticketsLeft = Ref.startTickets;
 			members = new HashSet<Pawn>();
-			gameSpeed = 1;
+			previousSpeed = 1;
+			gameSpeed = 0;
 		}
 
 		public void Add(Pawn pawn)
@@ -44,6 +47,7 @@ namespace RimBattle
 			Scribe_Values.Look(ref name, "name");
 			Scribe_Values.Look(ref ticketsLeft, "ticketsLeft");
 			Scribe_Collections.Look(ref members, false, "members", LookMode.Reference);
+			Scribe_Values.Look(ref previousSpeed, "previousSpeed");
 			Scribe_Values.Look(ref gameSpeed, "gameSpeed");
 		}
 

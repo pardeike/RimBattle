@@ -28,12 +28,19 @@ namespace RimBattle
 			return false;
 		}
 
+		static readonly MethodInfo m_Event_current = AccessTools.Property(typeof(Event), nameof(Event.current)).GetGetMethod(true);
+		static readonly MethodInfo m_SpeedKeyboardEvents = SymbolExtensions.GetMethodInfo(() => Tools.SpeedKeyboardEvents());
+
 		static readonly MultiPatches multiPatches = new MultiPatches(
 			typeof(Hostility_MultiPatches),
 			new MultiPatchInfo(
 				SymbolExtensions.GetMethodInfo(() => TimeControls.DoTimeControlsGUI(default)),
 				m_ButtonImage, m_MyButtonImage,
 				(codes) => codes.Where(code => code.opcode == OpCodes.Ldloc_S).Take(1).Select(code => { code.opcode = OpCodes.Ldloc_S; return code; })
+			),
+			new MultiPatchInfo(
+				SymbolExtensions.GetMethodInfo(() => TimeControls.DoTimeControlsGUI(default)),
+				m_Event_current, m_SpeedKeyboardEvents
 			)
 		);
 
@@ -107,11 +114,11 @@ namespace RimBattle
 			{
 				var rect = new Rect(leftX + 16f + speed * TimeControls.TimeButSize.x, curBaseY + 2f, TimeControls.TimeButSize.x, 2f);
 				foreach (var team in teams)
-				{
 					if (team.gameSpeed == speed)
+					{
 						Widgets.DrawBoxSolid(rect, Ref.TeamColors[team.id]);
-					rect.y += 4f;
-				}
+						rect.y += 4f;
+					}
 			}
 
 			TimeControls.DoTimeControlsGUI(timerRect);

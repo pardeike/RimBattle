@@ -21,6 +21,11 @@ namespace RimBattle
 			MPTools.Checks();
 		}
 
+		public static void SetSpeed(int team, TimeSpeed speed)
+		{
+			SetSpeed(team, (int)speed);
+		}
+
 		[SyncMethod]
 		public static void SetSpeed(int team, int speed)
 		{

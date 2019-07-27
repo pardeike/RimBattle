@@ -674,23 +674,44 @@ namespace RimBattle
 			File.WriteAllBytes(path, data);
 		}
 
-		// kill messages
+		// speed keyboard shortcuts
 		//
-		/*public static Tale KillMessage(Pawn killer, Pawn victim, DamageInfo dinfo)
+		public static Event SpeedKeyboardEvents()
 		{
-			if (dinfo.Weapon == null)
-				return TaleFactory.MakeRawTale(TaleDefOf.KilledBy, new object[] { killer, victim });
+			if (Event.current.type != EventType.KeyDown)
+				return Event.current;
 
-			if (dinfo.Weapon.building != null && dinfo.Weapon.building.IsMortar)
-				return TaleFactory.MakeRawTale(TaleDefOf.KilledMortar, new object[] { killer, victim, dinfo.Weapon });
+			var keyBindings = new[] {
+			KeyBindingDefOf.TogglePause,
+			KeyBindingDefOf.TimeSpeed_Normal,
+			KeyBindingDefOf.TimeSpeed_Fast,
+			KeyBindingDefOf.TimeSpeed_Superfast,
+			KeyBindingDefOf.TimeSpeed_Ultrafast };
 
-			if (dinfo.Weapon.IsMeleeWeapon)
-				return TaleFactory.MakeRawTale(TaleDefOf.KilledMelee, new object[] { killer, victim, dinfo.Weapon });
+			var team = Ref.controller.CurrentTeam;
+			for (var i = 0; i <= 4; i++)
+				if (keyBindings[i].KeyDownEvent)
+				{
+					if (i > 0)
+					{
+						team.gameSpeed = i;
+						Multiplayer.SetSpeed(Ref.controller.team, team.gameSpeed);
+						continue;
+					}
 
-			if (killer.Position.DistanceTo(victim.Position) >= 35f)
-				return TaleFactory.MakeRawTale(TaleDefOf.KilledLongRange, new object[] { killer, victim, dinfo.Weapon });
+					if (team.gameSpeed == 0)
+						Multiplayer.SetSpeed(Ref.controller.team, team.previousSpeed);
+					else
+					{
+						team.previousSpeed = team.gameSpeed;
+						team.gameSpeed = 0;
+						Multiplayer.SetSpeed(Ref.controller.team, team.gameSpeed);
+					}
 
-			return TaleFactory.MakeRawTale(TaleDefOf.KilledColonist, new object[] { killer, victim });
-		}*/
+					Event.current.Use();
+					return new Event();
+				}
+			return Event.current;
+		}
 	}
 }
