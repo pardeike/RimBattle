@@ -10,7 +10,6 @@ using System.Text;
 using UnityEngine;
 using Verse;
 using Verse.AI;
-using Verse.Profile;
 
 // TODO: IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
 
@@ -40,6 +39,13 @@ namespace RimBattle
 			return -1;
 		}
 
+		// make an enumeration into a hashset
+		//
+		public static HashSet<T> ToHashSet<T>(this IEnumerable<T> source, IEqualityComparer<T> comparer = null)
+		{
+			return new HashSet<T>(source, comparer);
+		}
+
 		// recreate new colonists
 		//
 		public static void AddNewColonistsToTeam(Team team)
@@ -64,98 +70,17 @@ namespace RimBattle
 			var settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
 			settlement.SetFaction(Find.GameInitData.playerFaction);
 			settlement.Tile = tile;
-			settlement.Name = NameGenerator.GenerateName(Faction.OfPlayer.def.settlementNameMaker);
+			settlement.Name = $"Tile{tile}";
 			Find.WorldObjects.Add(settlement);
 			return settlement;
 		}
 
-		// shameless copy of Game.InitNewGame()
-		// too much has changed and moved around
-		//
-		public static void InitNewGame()
+		public static void NameSettlements()
 		{
-			var game = Current.Game;
-
-			var str = LoadedModManager.RunningMods.Select(mod => mod.ToString()).ToCommaList(false);
-			Log.Message($"Initializing new game with mods {str}", false);
-			if (game.Maps.Any<Map>())
+			foreach (var tile in Ref.controller.tiles)
 			{
-				Log.Error("Called InitNewGame() but there already is a map. There should be 0 maps...", false);
-				return;
-			}
-			if (game.InitData == null)
-			{
-				Log.Error("Called InitNewGame() but init data is null. Create it first.", false);
-				return;
-			}
-			if (Ref.forceMapSize > 0)
-				game.InitData.mapSize = Ref.forceMapSize;
-
-			MemoryUtility.UnloadUnusedUnityAssets();
-			DeepProfiler.Start("InitNewGame");
-			try
-			{
-				Current.ProgramState = ProgramState.MapInitializing;
-
-				Ref.controller.mapSize = game.InitData.mapSize;
-				var mapSize = new IntVec3(game.InitData.mapSize, 1, game.InitData.mapSize);
-				game.World.info.initialMapSize = mapSize;
-				if (game.InitData.permadeath)
-				{
-					game.Info.permadeathMode = true;
-					game.Info.permadeathModeUniqueName = PermadeathModeUtility.GeneratePermadeathSaveName();
-				}
-
-				game.tickManager.gameStartAbsTick = GenTicks.ConfiguredTicksAbsAtGameStart;
-
-				var arrivalMethod = Find.Scenario.AllParts.OfType<ScenPart_PlayerPawnsArriveMethod>().First();
-				Traverse.Create(arrivalMethod).Field("method").SetValue(PlayerPawnsArriveMethod.Standing);
-
-				var allTiles = Ref.controller.tiles;
-				var allTileIndices = TeamTiles(Ref.controller.tileCount, Ref.controller.tileCount);
-				var teamTileIndices = TeamTiles(Ref.controller.tileCount, Ref.controller.teamCount);
-				for (var i = 0; i < allTiles.Count; i++)
-				{
-					var tile = allTiles[i];
-					var tileIndex = allTileIndices[i];
-					var hasTeam = teamTileIndices.Contains(tileIndex);
-
-					Find.GameInitData.startingAndOptionalPawns.Clear();
-					Team team = null;
-					if (hasTeam)
-					{
-						team = Ref.controller.CreateTeam();
-						AddNewColonistsToTeam(team);
-					}
-
-					var settlement = CreateSettlement(tile);
-					var map = MapGenerator.GenerateMap(mapSize, settlement, settlement.MapGeneratorDef, settlement.ExtraGenStepDefs, null);
-					PawnUtility.GiveAllStartingPlayerPawnsThought(ThoughtDefOf.NewColonyOptimism);
-
-					Ref.controller.CreateMapPart(map);
-					if (i == 0)
-						Current.Game.CurrentMap = map;
-				}
-
-				game.FinalizeInit();
-				game.playSettings.useWorkPriorities = true;
-
-				Find.CameraDriver.JumpToCurrentMapLoc(MapGenerator.PlayerStartSpot);
-				Find.CameraDriver.ResetSize();
-				Find.Scenario.PostGameStart();
-
-				if (Faction.OfPlayer.def.startingResearchTags != null)
-					foreach (var tag in Faction.OfPlayer.def.startingResearchTags)
-						foreach (var researchProjectDef in DefDatabase<ResearchProjectDef>.AllDefs)
-							if (researchProjectDef.HasTag(tag))
-								game.researchManager.FinishProject(researchProjectDef, false, null);
-
-				GameComponentUtility.StartedNewGame();
-				game.InitData = null;
-			}
-			finally
-			{
-				DeepProfiler.End();
+				var settlement = Find.WorldObjects.SettlementAt(tile);
+				settlement.Name = NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker);
 			}
 		}
 
@@ -243,7 +168,6 @@ namespace RimBattle
 		}
 
 		// returns a map for a tile number
-		// TODO: does this exist in vanilla?
 		//
 		public static Map MapForTile(int tile)
 		{

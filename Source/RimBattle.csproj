@@ -34,8 +34,15 @@
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Main\Multiplayer.cs" />
+    <Compile Include="Main\GameState.cs" />
+    <Compile Include="Misc\PlayerConnectDialog.cs" />
+    <Compile Include="Multiplayer\MPEnums.cs" />
+    <Compile Include="Multiplayer\MPEvents.cs" />
+    <Compile Include="Multiplayer\MPPatches.cs" />
+    <Compile Include="Multiplayer\MPTools.cs" />
+    <Compile Include="Multiplayer\Multiplayer.cs" />
     <Compile Include="Misc\CompOwnedBy.cs" />
+    <Compile Include="Multiplayer\PlayerInfo.cs" />
     <Compile Include="Patches\HositilityPatches.cs" />
     <Compile Include="Patches\InterfacePatches.cs" />
     <Compile Include="Main\MultiPatches.cs" />

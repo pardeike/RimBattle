@@ -1,52 +1,11 @@
 ﻿using Harmony;
 using Multiplayer.API;
 using System;
-using System.Linq;
 using System.Reflection;
 using Verse;
 
 namespace RimBattle
 {
-	class Multiplayer
-	{
-		public static void Init()
-		{
-			if (MP.enabled == false)
-			{
-				Log.Error("RimBattle needs Multiplayer to be enabled!");
-				return;
-			}
-
-			MP.RegisterAll();
-			MPTools.Checks();
-		}
-
-		public static void SetSpeed(int team, TimeSpeed speed)
-		{
-			SetSpeed(team, (int)speed);
-		}
-
-		[SyncMethod]
-		public static void SetSpeed(int team, int speed)
-		{
-			Ref.controller.teams[team].gameSpeed = speed;
-
-			var teams = Ref.controller.teams;
-			var minSpeed = Math.Max(1, teams.Min(t => t.gameSpeed));
-			if (teams.All(t => t.gameSpeed == 0))
-				minSpeed = 0;
-
-			var timeSpeed = Ref.CachedTimeSpeedValues[minSpeed];
-			var currentSpeed = MPTools.CurTimeSpeed;
-
-			if (currentSpeed != timeSpeed)
-			{
-				MPTools.CurTimeSpeed = timeSpeed;
-				Ref.PlaySoundOf(null, new object[] { MPTools.CurTimeSpeed });
-			}
-		}
-	}
-
 	class MPTools
 	{
 		// API support and wrappers
@@ -66,6 +25,14 @@ namespace RimBattle
 			"Type Multiplayer.Client.MapAsyncTimeComp".NullCheck(MP_MapAsyncTimeComp);
 			"Method Multiplayer.Client.MapAsyncTimeComp.get_TimeSpeed".NullCheck(m_get_TimeSpeed);
 			"Method Multiplayer.Client.MapAsyncTimeComp.set_TimeSpeed".NullCheck(m_set_TimeSpeed);
+		}
+
+		public static MethodInfo Method(string typeName, string methodName)
+		{
+			var result = AccessTools.Method($"Multiplayer.{typeName}:{methodName}");
+			if (result == null)
+				Log.Error($"Cannot find {methodName} in type Multiplayer.{typeName}");
+			return result;
 		}
 
 		public static TimeSpeed CurTimeSpeed

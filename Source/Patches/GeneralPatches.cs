@@ -9,6 +9,26 @@ namespace RimBattle
 {
 	// getting our own OnGUI
 	//
+	[HarmonyPatch(typeof(UIRoot_Entry))]
+	[HarmonyPatch(nameof(UIRoot_Entry.Init))]
+	class UIRoot_Entry_Init_Patch
+	{
+		[HarmonyPriority(10000)]
+		static void Prefix()
+		{
+			if (Multiplayer.IsArbiter())
+				return;
+
+			// TODO: remove later
+			var nameBank = PawnNameDatabaseShuffled.BankOf(PawnNameCategory.HumanStandard);
+			var gender = ((Rand.Value >= 0.5f) ? Gender.Female : Gender.Male);
+			var mpName = nameBank.GetName(PawnNameSlot.First, gender, false);
+			Multiplayer.SetName(mpName);
+		}
+	}
+
+	// getting our own OnGUI
+	//
 	[HarmonyPatch(typeof(UIRoot))]
 	[HarmonyPatch(nameof(UIRoot.UIRootOnGUI))]
 	class UIRoot_UIRootOnGUI_Patch
@@ -17,6 +37,20 @@ namespace RimBattle
 		static void Postfix()
 		{
 			Ref.controller?.OnGUI();
+		}
+	}
+
+	// start paused
+	//
+	[HarmonyPatch(typeof(Prefs))]
+	[HarmonyPatch(nameof(Prefs.PauseOnLoad), MethodType.Getter)]
+	class Prefs_PauseOnLoad_Patch
+	{
+		[HarmonyPriority(10000)]
+		static bool Prefix(ref bool __result)
+		{
+			__result = true;
+			return true;
 		}
 	}
 

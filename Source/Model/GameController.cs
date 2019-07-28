@@ -57,6 +57,14 @@ namespace RimBattle
 			mapParts.Add(map.GetComponent<MapPart>());
 		}
 
+		public void MultiplayerEstablished(bool isServer)
+		{
+			if (isServer)
+				LongEventHandler.QueueLongEvent(GameState.ConnectPlayers, "Wait4Players", false, null);
+			else
+				GameState.ConnectPlayers();
+		}
+
 		public override void GameComponentTick()
 		{
 			battleOverview.Update();

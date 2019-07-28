@@ -104,7 +104,7 @@ namespace RimBattle
 			width = Mathf.Min(width, 150f);
 
 			var teams = Ref.controller.teams;
-			var choices = 2f + 6f * teams.Count;
+			var choices = 2f + 6f * teams.Count + 6f;
 
 			var y = TimeControls.TimeButSize.y;
 			var timerRect = new Rect(leftX + 16f, curBaseY - y, width, y + choices);

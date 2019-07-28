@@ -5,17 +5,17 @@ namespace RimBattle
 {
 	public class RimBattleModSettings : ModSettings
 	{
-		static string buffer;
+		// static string buffer;
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
 
 			// for testing switching teams
-			var team = Ref.controller?.team ?? 0;
+			/*var team = Ref.controller?.team ?? 0;
 			Scribe_Values.Look(ref team, "team", 0);
 			if (Ref.controller != null)
-				Ref.controller.team = team;
+				Ref.controller.team = team;*/
 		}
 
 #pragma warning disable CA1822 // Mark members as static
@@ -26,10 +26,10 @@ namespace RimBattle
 			list.Gap(12f);
 
 			// for testing switching teams
-			var oldValue = Ref.controller.team;
+			/*var oldValue = Ref.controller.team;
 			list.TextFieldNumericLabeled("Team", ref Ref.controller.team, ref buffer);
 			if (Ref.controller.team != oldValue)
-				Find.ColonistBar.MarkColonistsDirty();
+				Find.ColonistBar.MarkColonistsDirty();*/
 
 			list.End();
 		}

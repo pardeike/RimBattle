@@ -90,7 +90,7 @@ namespace RimBattle
 			new Faction(), new Faction(), new Faction(), new Faction(), new Faction(), new Faction(), new Faction()
 		};
 
-		public const int forceMapSize = 120;
+		public const int forceMapSize = 75;
 		public const int startTickets = 100;
 
 		public const int defaultVisibleRange = 6;
@@ -98,6 +98,8 @@ namespace RimBattle
 
 		public static readonly string[] tileNames = new string[] { "Center", "Right", "TopRight", "TopLeft", "Left", "BottomLeft", "BottomRight" };
 
+		public static readonly FieldRef<Scenario, List<ScenPart>> parts = FieldRefAccess<Scenario, List<ScenPart>>("parts");
+		public static readonly FieldRef<ScenPart_PlayerPawnsArriveMethod, PlayerPawnsArriveMethod> method = FieldRefAccess<ScenPart_PlayerPawnsArriveMethod, PlayerPawnsArriveMethod>("method");
 		public static readonly FieldRef<Pawn_PlayerSettings, Pawn> master = FieldRefAccess<Pawn_PlayerSettings, Pawn>("master");
 		public static readonly FieldRef<SectionLayer, Section> SectionLayer_section = FieldRefAccess<SectionLayer, Section>("section");
 		public static readonly FieldRef<FogGrid, Map> map = FieldRefAccess<FogGrid, Map>("map");
