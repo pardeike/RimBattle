@@ -315,7 +315,6 @@ namespace RimBattle
 		{
 			yield return SymbolExtensions.GetMethodInfo(() => CharacterCardUtility.DrawCharacterCard(default, null, null, default));
 			yield return AccessTools.Method(typeof(HealthCardUtility), "DrawOverviewTab");
-			yield return AccessTools.Method(typeof(PawnDiedOrDownedThoughtsUtility), "AppendThoughts_ForHumanlike");
 		}
 
 		static bool IsMyColonist(Pawn pawn)
@@ -512,6 +511,27 @@ namespace RimBattle
 		}
 	}
 
+	// only show gizmos on owned things
+	//
+	[HarmonyPatch]
+	class Things_GetGizmos_Patch
+	{
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			return Tools.GetMethodsFromSubclasses(typeof(Thing), nameof(Thing.GetGizmos));
+		}
+
+		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, ThingWithComps __instance)
+		{
+			var team = __instance.OwnedByTeam();
+			if (team != -1 && team != Ref.controller.team)
+				yield break;
+
+			foreach (var gimzo in gizmos)
+				yield return gimzo;
+		}
+	}
+
 	// only show context menu for our own team members
 	//
 	[HarmonyPatch(typeof(FloatMenuMakerMap))]
@@ -541,14 +561,10 @@ namespace RimBattle
 			if (dinfo == null) return;
 			var killer = dinfo.Value.Instigator as Pawn;
 			if (killer == null) return;
-
-			//var teamKiller = Ref.controller.GetTeam(killer);
-			//var teamKilled = Ref.controller.GetTeam(__instance);
 			var weapon = "";
-			if (dinfo.Value.Weapon != null)
+			if (dinfo.Value.Weapon != null && dinfo.Value.Weapon != ThingDefOf.Human)
 				weapon = "with " + Find.ActiveLanguageWorker.WithIndefiniteArticle(dinfo.Value.Weapon.label, killer.gender);
 
-			//var message = $"{killer.Name.ToStringShort} of {teamKiller.name} killed {__instance.Name.ToStringShort} of {teamKilled.name} {weapon}";
 			var message = $"{killer.Name.ToStringShort} killed {__instance.Name.ToStringShort} {weapon}";
 			Messages.Message(message, killer, MessageTypeDefOf.PositiveEvent, true);
 		}

@@ -9,13 +9,6 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
-// ================== TODO =====================
-/*
- * Designator_Forbid - patch away forbidding on unowned things
- * Uninstall/reinstall - patch away for unowned things
- */
-// ================== TODO =====================
-
 namespace RimBattle
 {
 	using Instructions = IEnumerable<CodeInstruction>;
@@ -45,7 +38,6 @@ namespace RimBattle
 		static readonly MethodInfo m_MySetFactionDirect1 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, default(Pawn)));
 		static void MySetFactionDirect(Thing thing, Faction newFaction, Pawn owner)
 		{
-			Log.Warning($"Add {thing} with owner {owner} ID={owner.GetTeamID()}");
 			thing.SetFactionDirect(newFaction);
 			if (newFaction == Faction.OfPlayer)
 				CompOwnedBy.SetTeam(thing as ThingWithComps, owner);
@@ -54,7 +46,6 @@ namespace RimBattle
 		static readonly MethodInfo m_MySetFactionDirect2 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, 0));
 		static void MySetFactionDirect(Thing thing, Faction newFaction, int team)
 		{
-			Log.Warning($"Add {thing} with ID={team}");
 			thing.SetFactionDirect(newFaction);
 			if (newFaction == Faction.OfPlayer)
 				CompOwnedBy.SetTeam(thing as ThingWithComps, team);
@@ -110,23 +101,75 @@ namespace RimBattle
 		}
 	}
 
-	// patch all workgivers to disallow work on not-owned things
+	// patch lots of methods to disallow work on not-owned things
 	//
 	[HarmonyPatch]
 	class OwnedByTeam_WorkGiver_Patches
 	{
 		static IEnumerable<MethodBase> TargetMethods()
 		{
-			return Tools.GetMethodsFromSubclasses(typeof(WorkGiver_Scanner), nameof(WorkGiver_Scanner.HasJobOnThing));
+			yield return AccessTools.Method(typeof(WorkGiver_ConstructDeliverResources), "IsNewValidNearbyNeeder");
+			yield return SymbolExtensions.GetMethodInfo(() => new ReservationManager(null).CanReserve(default, default, 0, 0, null, false));
+			yield return SymbolExtensions.GetMethodInfo(() => new ReservationManager(null).CanReserveStack(default, default, 0, null, false));
+			yield return SymbolExtensions.GetMethodInfo(() => new ReservationManager(null).IsReservedAndRespected(default, default));
+			yield return SymbolExtensions.GetMethodInfo(() => new ReservationManager(null).ReservedBy(default, default, default));
+			yield return SymbolExtensions.GetMethodInfo(() => ForbidUtility.IsForbidden(default(Thing), default(Pawn)));
+			yield return SymbolExtensions.GetMethodInfo(() => ForbidUtility.IsForbiddenToPass(default, default));
+			yield return SymbolExtensions.GetMethodInfo(() => new PhysicalInteractionReservationManager().IsReservedBy(default, default));
+			yield return SymbolExtensions.GetMethodInfo(() => RestUtility.IsValidBedFor(default, default, default, false, false, false, false));
 		}
 
-		static bool Prefix(Pawn pawn, Thing t)
+		static bool CanHandle(string method, Pawn pawn, Thing t)
 		{
 			if (pawn == null || t == null)
+				return true;
+			if (t is Building_Door door && door.FreePassage && method == "IsForbiddenToPass")
 				return true;
 			var thingTeam = t.OwnedByTeam();
 			var workerTeam = pawn.GetTeamID();
 			return thingTeam < 0 || workerTeam < 0 || thingTeam == workerTeam;
+		}
+
+		static Instructions Transpiler(MethodBase original, Instructions codes, ILGenerator generator)
+		{
+			var label = generator.DefineLabel();
+			var parameterTypes = original.GetParameters().Types().ToList();
+			var returnFalseIfCannotHandle = new[] { "IsNewValidNearbyNeeder", "CanReserve", "CanReserveStack", "IsValidBedFor", }
+				.Contains(original.Name);
+
+			var skipOneArg = original.IsStatic ? 0 : 1;
+			var m_OwnedBy = SymbolExtensions.GetMethodInfo(() => CanHandle("", null, null));
+			var m_get_Thing = AccessTools.Property(typeof(LocalTargetInfo), nameof(LocalTargetInfo.Thing)).GetGetMethod(true);
+
+			yield return new CodeInstruction(OpCodes.Ldstr, original.Name);
+
+			yield return parameterTypes
+				.Where(type => typeof(Pawn).IsAssignableFrom(type))
+				.Select(type => new CodeInstruction(OpCodes.Ldarg, skipOneArg + parameterTypes.IndexOf(type)))
+				.FirstOrDefault();
+
+			var idx = original.GetParameters().IndexOf(p => p.ParameterType == typeof(LocalTargetInfo));
+			if (idx >= 0)
+			{
+				yield return new CodeInstruction(OpCodes.Ldarga_S, skipOneArg + idx);
+				yield return new CodeInstruction(OpCodes.Call, m_get_Thing);
+			}
+			else
+			{
+				yield return parameterTypes
+				.Where(type => typeof(ThingWithComps).IsAssignableFrom(type))
+				.Select(type => new CodeInstruction(OpCodes.Ldarg, skipOneArg + parameterTypes.IndexOf(type)))
+				.FirstOrDefault();
+			}
+
+			yield return new CodeInstruction(OpCodes.Call, m_OwnedBy);
+			yield return new CodeInstruction(OpCodes.Brtrue, label);
+			yield return new CodeInstruction(returnFalseIfCannotHandle ? OpCodes.Ldc_I4_0 : OpCodes.Ldc_I4_1);
+			yield return new CodeInstruction(OpCodes.Ret);
+
+			codes.First().labels.Add(label);
+			foreach (var code in codes)
+				yield return code;
 		}
 	}
 
@@ -484,7 +527,9 @@ namespace RimBattle
 			var label = generator.DefineLabel();
 
 			var codes = instructions.ToList();
-			var idx1 = codes.FirstIndexOf(code => code.opcode == OpCodes.Stloc_2);
+			var idx1 = codes.IndexOf(code => code.opcode == OpCodes.Stloc_2);
+			if (idx1 < 1)
+				Log.Error("Cannot find Stloc.2 in OverlayDrawer.DrawAllOverlays");
 			codes.InsertRange(idx1 + 1, new[]
 			{
 				new CodeInstruction(OpCodes.Ldloc_2),
@@ -492,6 +537,8 @@ namespace RimBattle
 				new CodeInstruction(OpCodes.Brfalse, label)
 			});
 			var idx2 = codes.FindLastIndex(code => code.opcode == OpCodes.Brtrue);
+			if (idx2 < 2)
+				Log.Error("Cannot find Brtrue in OverlayDrawer.DrawAllOverlays");
 			codes[idx2 - 2].labels.Add(label);
 			return codes.AsEnumerable();
 		}

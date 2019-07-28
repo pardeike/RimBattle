@@ -26,6 +26,20 @@ namespace RimBattle
 				Log.Error($"{description} is null");
 		}
 
+		// index in enumeration
+		//
+		public static int IndexOf<T>(this IEnumerable<T> enumerable, Func<T, bool> predicate)
+		{
+			var num = 0;
+			foreach (var arg in enumerable)
+			{
+				if (predicate(arg))
+					return num;
+				num++;
+			}
+			return -1;
+		}
+
 		// recreate new colonists
 		//
 		public static void AddNewColonistsToTeam(Team team)

@@ -174,7 +174,7 @@ namespace RimBattle
 				Log.Error("Cannot find constructor for c_LordJob_FormAndSendBattleCaravan()");
 
 			var codes = instructions.ToList();
-			var idx = codes.FirstIndexOf(code => code.opcode == OpCodes.Newobj && code.operand == c_LordJob_FormAndSendCaravan);
+			var idx = codes.IndexOf(code => code.opcode == OpCodes.Newobj && code.operand == c_LordJob_FormAndSendCaravan);
 			if (idx < 0)
 				Log.Error("Cannot find constructor LordJob_FormAndSendCaravan() in CaravanFormingUtility.StartFormingCaravan");
 

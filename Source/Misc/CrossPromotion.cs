@@ -404,7 +404,7 @@ namespace RimBattle
 								{
 									var orderedMods = (IEnumerable<ModMetaData>)AccessTools.Method(typeof(Page_ModsConfig), "ModsInListOrder").Invoke(page, new object[0]);
 									page.selectedMod = orderedMods.FirstOrDefault(meta => meta.GetPublishedFileId().m_PublishedFileId == myModID);
-									var modsBefore = orderedMods.FirstIndexOf(m => m == page.selectedMod);
+									var modsBefore = orderedMods.IndexOf(m => m == page.selectedMod);
 									if (modsBefore >= 0)
 										Traverse.Create(page).Field("modListScrollPosition").SetValue(new Vector2(0f, modsBefore * 26f + 4f));
 								}

@@ -9,8 +9,6 @@
 		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
-			var multiPlayerType = AccessTools.TypeByName("Multiplayer.Client.Multiplayer");
-			Log.Warning("type = " + multiPlayerType);
 		}
 	}*/
 
