@@ -35,6 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Main\Multiplayer.cs" />
+    <Compile Include="Misc\CompOwnedBy.cs" />
     <Compile Include="Patches\HositilityPatches.cs" />
     <Compile Include="Patches\InterfacePatches.cs" />
     <Compile Include="Main\MultiPatches.cs" />

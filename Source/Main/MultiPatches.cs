@@ -8,22 +8,24 @@ using Verse;
 
 namespace RimBattle
 {
+	using Instructions = IEnumerable<CodeInstruction>;
+
 	public class MultiPatchInfo
 	{
 		public MethodBase original;
 		public MethodInfo replaceFrom;
 		public MethodInfo replaceTo;
-		public Func<IEnumerable<CodeInstruction>, IEnumerable<CodeInstruction>> argumentCodes;
+		public Func<Instructions, Instructions> argumentCodes;
 
-		public MultiPatchInfo(MethodBase original, MethodInfo replaceFrom, MethodInfo replaceTo, params CodeInstruction[] instructions)
+		public MultiPatchInfo(MethodBase original, MethodInfo replaceFrom, MethodInfo replaceTo, params CodeInstruction[] codes)
 		{
 			this.original = original;
 			this.replaceFrom = replaceFrom;
 			this.replaceTo = replaceTo;
-			argumentCodes = (_) => instructions.AsEnumerable();
+			argumentCodes = (_) => codes.AsEnumerable();
 		}
 
-		public MultiPatchInfo(MethodBase original, MethodInfo replaceFrom, MethodInfo replaceTo, Func<IEnumerable<CodeInstruction>, IEnumerable<CodeInstruction>> argumentCodes)
+		public MultiPatchInfo(MethodBase original, MethodInfo replaceFrom, MethodInfo replaceTo, Func<Instructions, Instructions> argumentCodes)
 		{
 			this.original = original;
 			this.replaceFrom = replaceFrom;
@@ -35,12 +37,17 @@ namespace RimBattle
 	public class MultiPatches
 	{
 		readonly Type patchClass;
-		readonly MultiPatchInfo[] patchInfos;
+		readonly List<MultiPatchInfo> patchInfos;
 
 		public MultiPatches(Type patchClass, params MultiPatchInfo[] patchInfos)
 		{
 			this.patchClass = patchClass;
-			this.patchInfos = patchInfos;
+			this.patchInfos = patchInfos.ToList();
+		}
+
+		public void Add(MultiPatchInfo patchInfo)
+		{
+			patchInfos.Add(patchInfo);
 		}
 
 		public IEnumerable<MethodBase> TargetMethods()
@@ -51,9 +58,9 @@ namespace RimBattle
 			{
 				if (patchInfo.original == null)
 					Log.Error($"In {patchClass.FullName} original #{i} was not defined");
-				if (patchInfo.replaceFrom == null || patchInfo.replaceFrom.IsStatic == false)
+				if (patchInfo.replaceFrom == null)
 					Log.Error($"In {patchClass.FullName} replaceFrom #{i} was not defined");
-				if (patchInfo.replaceTo == null || patchInfo.replaceTo.IsStatic == false)
+				if (patchInfo.replaceTo == null)
 					Log.Error($"In {patchClass.FullName} replaceTo #{i} was not defined");
 				if (patchInfo.original != null && originals.Contains(patchInfo.original) == false)
 				{
@@ -64,7 +71,7 @@ namespace RimBattle
 			}
 		}
 
-		public IEnumerable<CodeInstruction> Transpile(MethodBase original, IEnumerable<CodeInstruction> instructions)
+		public Instructions Transpile(MethodBase original, Instructions instructions)
 		{
 			var codes = instructions.ToList();
 			var multiPatches = patchInfos.Where(info => info.original == original);
@@ -72,15 +79,19 @@ namespace RimBattle
 			{
 				if (multiPatch.replaceFrom == multiPatch.replaceTo)
 					Log.Error($"Replacement methods are the same in {original.FullDescription()}");
+				if (multiPatch.replaceTo.IsStatic == false)
+					Log.Error($"Replacement method must be static");
 
-				var fromTypes = multiPatch.replaceFrom.GetParameters().Types();
+				var fromTypes = multiPatch.replaceFrom.GetParameters().Types().ToList();
+				if (multiPatch.replaceFrom.IsStatic == false)
+					fromTypes.Insert(0, multiPatch.replaceFrom.DeclaringType);
 				var toTypes = multiPatch.replaceTo.GetParameters().Types();
-				if (toTypes.Length < fromTypes.Length)
+				if (toTypes.Length < fromTypes.Count)
 				{
 					var info = $"{multiPatch.replaceFrom.FullDescription()}/{multiPatch.replaceTo.FullDescription()}";
 					Log.Error($"Replacement methods have mismatching arguments ({info}) in {original.FullDescription()}");
 				}
-				for (var i = 0; i < fromTypes.Length; i++)
+				for (var i = 0; i < fromTypes.Count; i++)
 					if (fromTypes[i] != toTypes[i])
 						Log.Error($"Replacement methods have mismatching argument #{i + 1} (should be {fromTypes[i]}) in {original.FullDescription()}");
 				var found = false;

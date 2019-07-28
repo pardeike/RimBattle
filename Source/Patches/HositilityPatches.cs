@@ -205,9 +205,9 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(MethodBase original, Instructions instructions)
+		static Instructions Transpiler(MethodBase original, Instructions codes)
 		{
-			return multiPatches.Transpile(original, instructions);
+			return multiPatches.Transpile(original, codes);
 		}
 	}
 }

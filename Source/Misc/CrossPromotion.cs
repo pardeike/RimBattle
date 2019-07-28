@@ -14,6 +14,8 @@ using Verse.Steam;
 
 namespace RimBattle
 {
+	using Instructions = IEnumerable<CodeInstruction>;
+
 	[StaticConstructorOnStartup]
 	class CrossPromotion
 	{
@@ -87,14 +89,13 @@ namespace RimBattle
 		static readonly MethodInfo m_EndGroup = SymbolExtensions.GetMethodInfo(() => GUI.EndGroup());
 		static readonly MethodInfo m_Promotion = SymbolExtensions.GetMethodInfo(() => PromotionLayout.Promotion(new Rect(), null));
 
-		static IEnumerable<CodeInstruction> Page_ModsConfig_DoWindowContents_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+		static Instructions Page_ModsConfig_DoWindowContents_Transpiler(Instructions instructions, ILGenerator generator)
 		{
-			var list = instructions.ToList();
-			var beginGroupIndicies = list
+			var beginGroupIndicies = instructions
 				.Select((instr, idx) => new Pair<int, CodeInstruction>(idx, instr))
 				.Where(pair => pair.Second.operand == m_BeginGroup)
 				.Select(pair => pair.First).ToArray();
-			var endGroupIndicies = list
+			var endGroupIndicies = instructions
 				.Select((instr, idx) => new Pair<int, CodeInstruction>(idx, instr))
 				.Where(pair => pair.Second.operand == m_EndGroup)
 				.Select(pair => pair.First).ToArray();
@@ -104,9 +105,10 @@ namespace RimBattle
 			var iEnd = endGroupIndicies[0];
 
 			var jump = generator.DefineLabel();
-			list[iEnd + 1].labels.Add(jump);
-			var localPositionVar = list[iBegin];
-			list.InsertRange(iBegin, new[]
+			var codes = instructions.ToList();
+			codes[iEnd + 1].labels.Add(jump);
+			var localPositionVar = codes[iBegin];
+			codes.InsertRange(iBegin, new[]
 			{
 					localPositionVar.Clone(),
 					new CodeInstruction(OpCodes.Ldarg_0),
@@ -114,7 +116,7 @@ namespace RimBattle
 					new CodeInstruction(OpCodes.Brtrue, jump)
 				});
 
-			return list.AsEnumerable();
+			return codes.AsEnumerable();
 		}
 
 		internal static string ModPreviewPath(ulong modID)

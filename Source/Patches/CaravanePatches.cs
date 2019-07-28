@@ -29,23 +29,23 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
 			var m_List_Gizmo_Clear = SymbolExtensions.GetMethodInfo(() => new List<Gizmo>().Clear());
 			var m_ClearAndAddOurGizmo = SymbolExtensions.GetMethodInfo(() => ClearAndAddOurGizmo(null, null));
-			foreach (var instruction in instructions)
+			foreach (var code in codes)
 			{
 				var first = true;
 				if (first)
-					if (instruction.opcode == OpCodes.Call || instruction.opcode == OpCodes.Callvirt)
-						if (instruction.operand == m_List_Gizmo_Clear)
+					if (code.opcode == OpCodes.Call || code.opcode == OpCodes.Callvirt)
+						if (code.operand == m_List_Gizmo_Clear)
 						{
 							yield return new CodeInstruction(OpCodes.Ldarg_0);
-							instruction.opcode = OpCodes.Call;
-							instruction.operand = m_ClearAndAddOurGizmo;
+							code.opcode = OpCodes.Call;
+							code.operand = m_ClearAndAddOurGizmo;
 							first = false;
 						}
-				yield return instruction;
+				yield return code;
 			}
 		}
 	}
@@ -216,7 +216,7 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
 			var parameters = new[] { typeof(string), typeof(string), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(string) };
 			var m_ReceiveLetter = AccessTools.Method(typeof(LetterStack), nameof(LetterStack.ReceiveLetter), parameters);
@@ -224,7 +224,7 @@ namespace RimBattle
 				Log.Error("Cannot find method for LetterStack.ReceiveLetter()");
 			var m_ReceiveLetter_Empty = SymbolExtensions.GetMethodInfo(() => ReceiveLetter_Empty(null, "", "", default, default, null, ""));
 
-			return instructions.MethodReplacer(m_ReceiveLetter, m_ReceiveLetter_Empty);
+			return codes.MethodReplacer(m_ReceiveLetter, m_ReceiveLetter_Empty);
 		}
 	}
 
@@ -256,7 +256,7 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
 			if (m_TryFindRandomPackingSpot == null)
 				Log.Error("Cannot find method for Dialog_FormCaravan.TryFindRandomPackingSpot()");
@@ -264,7 +264,7 @@ namespace RimBattle
 			IntVec3 tmp;
 			var m_TryFindRandomPackingSpotCloseBy = SymbolExtensions.GetMethodInfo(() => TryFindRandomPackingSpotCloseBy(null, default, out tmp));
 
-			return instructions.MethodReplacer(m_TryFindRandomPackingSpot, m_TryFindRandomPackingSpotCloseBy);
+			return codes.MethodReplacer(m_TryFindRandomPackingSpot, m_TryFindRandomPackingSpotCloseBy);
 		}
 	}
 

@@ -62,43 +62,56 @@
 	//
 	// fake IsFogged 1
 	//
-	//[HarmonyPatch(typeof(FogGrid))]
-	//[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(IntVec3) })]
-	//class FogGrid_IsFogged1_Patch
-	//{
-	//	static bool Prefix(Map ___map, IntVec3 c, ref bool __result)
-	//	{
-	//		if (c.InBounds(___map) == false)
-	//		{
-	//			__result = false;
-	//			return false;
-	//		}
+	/*[HarmonyPatch(typeof(FogGrid))]
+	[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(IntVec3) })]
+	class FogGrid_IsFogged1_Patch
+	{
+		static bool Prefix(Map ___map, IntVec3 c, ref bool __result)
+		{
+			if (c.InBounds(___map) == false)
+			{
+				__result = false;
+				return false;
+			}
 
-	//		if (Ref.controller.mapParts.TryGetValue(___map, out var mapPart))
-	//			if (mapPart.visibility.IsVisible(c) == false)
-	//			{
-	//				__result = true;
-	//				return false;
-	//			}
-	//		return true;
-	//	}
-	//}
+			if (Ref.controller.mapParts.TryGetValue(___map, out var mapPart))
+				if (mapPart.visibility.IsVisible(c) == false)
+				{
+					__result = true;
+					return false;
+				}
+			return true;
+		}
+	}*/
 
 	// fake IsFogged 2
 	//
-	//[HarmonyPatch(typeof(FogGrid))]
-	//[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(int) })]
-	//class FogGrid_IsFogged2_Patch
-	//{
-	//	static bool Prefix(Map ___map, int index, ref bool __result)
-	//	{
-	//		if (Ref.controller.mapParts.TryGetValue(___map, out var mapPart))
-	//			if (mapPart.visibility.IsVisible(index) == false)
-	//			{
-	//				__result = true;
-	//				return false;
-	//			}
-	//		return true;
-	//	}
-	//}
+	/*[HarmonyPatch(typeof(FogGrid))]
+	[HarmonyPatch(nameof(FogGrid.IsFogged), new[] { typeof(int) })]
+	class FogGrid_IsFogged2_Patch
+	{
+		static bool Prefix(Map ___map, int index, ref bool __result)
+		{
+			if (Ref.controller.mapParts.TryGetValue(___map, out var mapPart))
+				if (mapPart.visibility.IsVisible(index) == false)
+				{
+					__result = true;
+					return false;
+				}
+			return true;
+		}
+	}*/
+
+	/* rescue message only for our team
+	//
+	[HarmonyPatch(typeof(Alert_ColonistNeedsRescuing))]
+	[HarmonyPatch("ColonistsNeedingRescue")]
+	class Alert_ColonistNeedsRescuing_ColonistsNeedingRescue_Patch
+	{
+		[HarmonyPriority(10000)]
+		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
+		{
+			return pawns.Where(pawn => Ref.controller.InMyTeam(pawn));
+		}
+	}*/
 }

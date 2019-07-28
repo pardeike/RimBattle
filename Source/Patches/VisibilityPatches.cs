@@ -9,9 +9,126 @@ using UnityEngine;
 using Verse;
 using Verse.AI;
 
+// ================== TODO =====================
+/*
+ * Designator_Forbid - patch away forbidding on unowned things
+ * Uninstall/reinstall - patch away for unowned things
+ */
+// ================== TODO =====================
+
 namespace RimBattle
 {
 	using Instructions = IEnumerable<CodeInstruction>;
+
+	// fake our CompOwnedBy into the init phase when loading from save file
+	//
+	[HarmonyPatch(typeof(ThingWithComps))]
+	[HarmonyPatch(nameof(ThingWithComps.InitializeComps))]
+	class ThingWithComps_InitializeComps_Patch
+	{
+		static void Postfix(ThingWithComps __instance)
+		{
+			if (Ref.comps(__instance) == null)
+				Ref.comps(__instance) = new List<ThingComp>();
+			var ownedBy = new CompOwnedBy() { parent = __instance };
+			Ref.comps(__instance).Add(ownedBy);
+		}
+	}
+
+	// things build are owned by the team of the builder
+	//
+	[HarmonyPatch]
+	class OwnedByTeam_MultiPatches
+	{
+		static readonly MethodInfo m_SetFactionDirect = SymbolExtensions.GetMethodInfo(() => new Thing().SetFactionDirect(default));
+
+		static readonly MethodInfo m_MySetFactionDirect1 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, default(Pawn)));
+		static void MySetFactionDirect(Thing thing, Faction newFaction, Pawn owner)
+		{
+			Log.Warning($"Add {thing} with owner {owner} ID={owner.GetTeamID()}");
+			thing.SetFactionDirect(newFaction);
+			if (newFaction == Faction.OfPlayer)
+				CompOwnedBy.SetTeam(thing as ThingWithComps, owner);
+		}
+
+		static readonly MethodInfo m_MySetFactionDirect2 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, 0));
+		static void MySetFactionDirect(Thing thing, Faction newFaction, int team)
+		{
+			Log.Warning($"Add {thing} with ID={team}");
+			thing.SetFactionDirect(newFaction);
+			if (newFaction == Faction.OfPlayer)
+				CompOwnedBy.SetTeam(thing as ThingWithComps, team);
+		}
+
+		static readonly MethodInfo m_PlaceBlueprintForBuild = SymbolExtensions.GetMethodInfo(() => GenConstruct.PlaceBlueprintForBuild(default, default, null, default, null, null));
+		static readonly MethodInfo m_MyPlaceBlueprintForBuild = SymbolExtensions.GetMethodInfo(() => MyPlaceBlueprintForBuild(default, default, null, default, null, null, 0));
+		static Blueprint_Build MyPlaceBlueprintForBuild(BuildableDef sourceDef, IntVec3 center, Map map, Rot4 rotation, Faction faction, ThingDef stuff, int team)
+		{
+			var blueprint = GenConstruct.PlaceBlueprintForBuild(sourceDef, center, map, rotation, faction, stuff);
+			CompOwnedBy.SetTeam(blueprint, team);
+			return blueprint;
+		}
+
+		static int CurrentTeam()
+		{
+			return Ref.controller.team;
+		}
+
+		static readonly MultiPatches multiPatches = new MultiPatches(
+			typeof(OwnedByTeam_MultiPatches),
+			new MultiPatchInfo(
+				SymbolExtensions.GetMethodInfo(() => new Frame().CompleteConstruction(null)),
+				m_SetFactionDirect, m_MySetFactionDirect1,
+				new CodeInstruction(OpCodes.Ldarg_1)
+			),
+			new MultiPatchInfo(
+				AccessTools.Method(typeof(Blueprint), nameof(Blueprint.TryReplaceWithSolidThing)),
+				m_SetFactionDirect, m_MySetFactionDirect1,
+				new CodeInstruction(OpCodes.Ldarg_1)
+			),
+			new MultiPatchInfo(
+				AccessTools.Method(typeof(Designator_Build), nameof(Designator_Build.DesignateSingleCell)),
+				m_SetFactionDirect, m_MySetFactionDirect2,
+				new CodeInstruction(OpCodes.Call, SymbolExtensions.GetMethodInfo(() => CurrentTeam()))
+			),
+			new MultiPatchInfo(
+				AccessTools.Method(typeof(Designator_Build), nameof(Designator_Build.DesignateSingleCell)),
+				m_PlaceBlueprintForBuild, m_MyPlaceBlueprintForBuild,
+				new CodeInstruction(OpCodes.Call, SymbolExtensions.GetMethodInfo(() => CurrentTeam()))
+			)
+		);
+
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			return multiPatches.TargetMethods();
+		}
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(MethodBase original, Instructions codes)
+		{
+			return multiPatches.Transpile(original, codes);
+		}
+	}
+
+	// patch all workgivers to disallow work on not-owned things
+	//
+	[HarmonyPatch]
+	class OwnedByTeam_WorkGiver_Patches
+	{
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			return Tools.GetMethodsFromSubclasses(typeof(WorkGiver_Scanner), nameof(WorkGiver_Scanner.HasJobOnThing));
+		}
+
+		static bool Prefix(Pawn pawn, Thing t)
+		{
+			if (pawn == null || t == null)
+				return true;
+			var thingTeam = t.OwnedByTeam();
+			var workerTeam = pawn.GetTeamID();
+			return thingTeam < 0 || workerTeam < 0 || thingTeam == workerTeam;
+		}
+	}
 
 	// uncover map when moving
 	//
@@ -175,67 +292,68 @@ namespace RimBattle
 
 		static IEnumerable<MethodBase> TargetMethods()
 		{
-			var myAssembly = typeof(Designator_Cell_Patch).Assembly;
-			return GenTypes.AllTypes
-				.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(Designator)))
-				.Where(type => type.Assembly != myAssembly && type != typeof(Designator_EmptySpace))
-				.Select(type => type.GetMethod(nameof(Designator.CanDesignateCell)) as MethodBase);
+			return Tools.GetMethodsFromSubclasses(typeof(Designator), nameof(Designator.CanDesignateCell));
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
+		static Instructions Transpiler(Instructions codes, ILGenerator generator)
 		{
-			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod(true);
-			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null, IntVec3.Zero));
-			var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
-			yield return new CodeInstruction(OpCodes.Ldarg_0);
-			yield return new CodeInstruction(OpCodes.Call, m_get_Map);
-			yield return new CodeInstruction(OpCodes.Ldarg_1);
-			yield return new CodeInstruction(OpCodes.Call, m_IsVisible);
-			var label = generator.DefineLabel();
-			yield return new CodeInstruction(OpCodes.Brtrue, label);
-			yield return new CodeInstruction(OpCodes.Call, m_get_WasRejected);
-			yield return new CodeInstruction(OpCodes.Ret);
-			yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
-			foreach (var instruction in instructions)
-				yield return instruction;
+			if (codes.Count() > 2)
+			{
+				var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod(true);
+				var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null, IntVec3.Zero));
+				var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
+				yield return new CodeInstruction(OpCodes.Ldarg_0);
+				yield return new CodeInstruction(OpCodes.Call, m_get_Map);
+				yield return new CodeInstruction(OpCodes.Ldarg_1);
+				yield return new CodeInstruction(OpCodes.Call, m_IsVisible);
+				var label = generator.DefineLabel();
+				yield return new CodeInstruction(OpCodes.Brtrue, label);
+				yield return new CodeInstruction(OpCodes.Call, m_get_WasRejected);
+				yield return new CodeInstruction(OpCodes.Ret);
+				yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
+			}
+			foreach (var code in codes)
+				yield return code;
 		}
 	}
 
-	// disallow designating things that are not visible
+	// disallow designating things that are not visible or not ours
 	//
 	[HarmonyPatch]
 	class Designator_Thing_Patch
 	{
 		static bool IsVisible(Thing thing)
 		{
+			var thingTeam = thing.OwnedByTeam();
+			if (thingTeam >= 0 && thingTeam != Ref.controller.team)
+				return false;
 			return Tools.IsVisible(thing);
 		}
 
 		static IEnumerable<MethodBase> TargetMethods()
 		{
-			var myAssembly = typeof(Designator_Thing_Patch).Assembly;
-			return GenTypes.AllTypes
-				.Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(typeof(Designator)))
-				.Where(type => type.Assembly != myAssembly && type != typeof(Designator_EmptySpace))
-				.Select(type => type.GetMethod(nameof(Designator.CanDesignateThing)) as MethodBase);
+			return Tools.GetMethodsFromSubclasses(typeof(Designator), nameof(Designator.CanDesignateThing));
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
+		static Instructions Transpiler(Instructions codes, ILGenerator generator)
 		{
-			var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod(true);
-			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null));
-			var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
-			yield return new CodeInstruction(OpCodes.Ldarg_1);
-			yield return new CodeInstruction(OpCodes.Call, m_IsVisible);
-			var label = generator.DefineLabel();
-			yield return new CodeInstruction(OpCodes.Brtrue, label);
-			yield return new CodeInstruction(OpCodes.Call, m_get_WasRejected);
-			yield return new CodeInstruction(OpCodes.Ret);
-			yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
-			foreach (var instruction in instructions)
-				yield return instruction;
+			if (codes.Count() > 2)
+			{
+				var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod(true);
+				var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null));
+				var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
+				yield return new CodeInstruction(OpCodes.Ldarg_1);
+				yield return new CodeInstruction(OpCodes.Call, m_IsVisible);
+				var label = generator.DefineLabel();
+				yield return new CodeInstruction(OpCodes.Brtrue, label);
+				yield return new CodeInstruction(OpCodes.Call, m_get_WasRejected);
+				yield return new CodeInstruction(OpCodes.Ret);
+				yield return new CodeInstruction(OpCodes.Nop) { labels = new List<Label>() { label } };
+			}
+			foreach (var code in codes)
+				yield return code;
 		}
 	}
 
@@ -301,9 +419,9 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
-			return Transpilers.MethodReplacer(instructions,
+			return Transpilers.MethodReplacer(codes,
 				SymbolExtensions.GetMethodInfo(() => new FogGrid(null).IsFogged(IntVec3.Zero)),
 				SymbolExtensions.GetMethodInfo(() => IsFogged(null, IntVec3.Zero))
 			);
@@ -338,9 +456,9 @@ namespace RimBattle
 	class SectionLayer_FogOfWar_Regenerate__Patch
 	{
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
-			instructions.GetHashCode(); // make compiler happy
+			codes.GetHashCode(); // make compiler happy
 			var replacement = SymbolExtensions.GetMethodInfo(() => CopiedMethods.RegenerateFog(null));
 			yield return new CodeInstruction(OpCodes.Ldarg_0);
 			yield return new CodeInstruction(OpCodes.Call, replacement);
@@ -401,9 +519,9 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
-			_ = instructions; // make compiler happy
+			_ = codes; // make compiler happy
 			var replacement = SymbolExtensions.GetMethodInfo(() => CopiedMethods.RegenerateFog(null));
 			yield return new CodeInstruction(OpCodes.Ldarg_0);
 			yield return new CodeInstruction(OpCodes.Call, replacement);

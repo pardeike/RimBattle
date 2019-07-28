@@ -134,6 +134,8 @@ namespace RimBattle
 		public static readonly Material BadgeShadow = MaterialPool.MatFrom("Badges/Shadow", ShaderDatabase.MetaOverlay);
 		public static readonly Texture2D[] Configs = Tools.GetTextures("Tiles/Config#", 1, 7);
 		public static readonly Texture2D[] Teams = Tools.GetTextures("Tiles/Team#", 1, 7);
+		public static readonly Material[] OwnedBy = Tools.GetMaterials("OwnedBy/OwnedBy#", 0, 6, ShaderDatabase.MetaOverlay);
+		public static readonly Material OwnedByShadow = MaterialPool.MatFrom("OwnedBy/Shadow", ShaderDatabase.MetaOverlay);
 	}
 }
 

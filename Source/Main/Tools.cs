@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -431,6 +432,14 @@ namespace RimBattle
 			return master;
 		}
 
+		// get if a thing is owned by a team
+		//
+		public static int OwnedByTeam(this Thing thing)
+		{
+			var ownedBy = (thing as ThingWithComps)?.GetComp<CompOwnedBy>();
+			return ownedBy != null ? ownedBy.team : -1;
+		}
+
 		// get team id of a colonist
 		//
 		public static int GetTeamID(this Pawn pawn)
@@ -544,6 +553,16 @@ namespace RimBattle
 				return true;
 
 			return controller.IsInVisibleRange(pawn);
+		}
+
+		// get methods from multiple inheriting classes
+		//
+		public static IEnumerable<MethodBase> GetMethodsFromSubclasses(Type baseType, string methodName)
+		{
+			return GenTypes.AllSubclassesNonAbstract(baseType)
+				.Select(type => type.GetMethod(methodName, AccessTools.all | BindingFlags.DeclaredOnly))
+				.Where(method => method != null)
+				.Cast<MethodBase>();
 		}
 
 		// hours to human readable text

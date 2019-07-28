@@ -30,25 +30,18 @@ namespace RimBattle
 		public static void SetSpeed(int team, int speed)
 		{
 			Ref.controller.teams[team].gameSpeed = speed;
-			Log.Warning($"Team {team} wants speed {speed}");
 
 			var teams = Ref.controller.teams;
 			var minSpeed = Math.Max(1, teams.Min(t => t.gameSpeed));
-			Log.Warning($"Min speed {minSpeed}");
 			if (teams.All(t => t.gameSpeed == 0))
-			{
-				Log.Warning($"All are paused => speed 0");
 				minSpeed = 0;
-			}
 
 			var timeSpeed = Ref.CachedTimeSpeedValues[minSpeed];
 			var currentSpeed = MPTools.CurTimeSpeed;
 
-			Log.Warning($"Speed change from {currentSpeed} to {timeSpeed}");
 			if (currentSpeed != timeSpeed)
 			{
 				MPTools.CurTimeSpeed = timeSpeed;
-				Log.Warning($"Speed now {MPTools.CurTimeSpeed}");
 				Ref.PlaySoundOf(null, new object[] { MPTools.CurTimeSpeed });
 			}
 		}
@@ -92,6 +85,7 @@ namespace RimBattle
 				{
 					var mapAsyncTimeComp = m_AsyncTime.Invoke(null, new object[] { Find.CurrentMap });
 					m_set_TimeSpeed.Invoke(mapAsyncTimeComp, new object[] { value });
+					return;
 				}
 				Find.TickManager.CurTimeSpeed = value;
 			}

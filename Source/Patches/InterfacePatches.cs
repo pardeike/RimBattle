@@ -14,8 +14,7 @@ namespace RimBattle
 
 	// make speed control use cooperative speed
 	//
-	[HarmonyPatch(typeof(TimeControls))]
-	[HarmonyPatch(nameof(TimeControls.DoTimeControlsGUI))]
+	[HarmonyPatch]
 	class TimeControls_DoTimeControlsGUI_Patch
 	{
 		static readonly MethodInfo m_ButtonImage = SymbolExtensions.GetMethodInfo(() => Widgets.ButtonImage(default, default));
@@ -50,9 +49,9 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(MethodBase original, Instructions instructions)
+		static Instructions Transpiler(MethodBase original, Instructions codes)
 		{
-			return multiPatches.Transpile(original, instructions);
+			return multiPatches.Transpile(original, codes);
 		}
 	}
 
@@ -82,9 +81,9 @@ namespace RimBattle
 		}
 
 		[HarmonyPriority(10000)]
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
-			return instructions.Select(code =>
+			return codes.Select(code =>
 			{
 				if (code.opcode == OpCodes.Ldc_R4 && (float)code.operand >= 141f)
 					code.operand = 999f;
@@ -336,11 +335,11 @@ namespace RimBattle
 			return faction;
 		}
 
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
 			var m_get_IsColonist = AccessTools.Property(typeof(Pawn), nameof(Pawn.IsColonist)).GetGetMethod(true);
 			var m_get_Faction = AccessTools.Property(typeof(Thing), nameof(Thing.Faction)).GetGetMethod(true);
-			return instructions
+			return codes
 				.MethodReplacer(m_get_IsColonist, SymbolExtensions.GetMethodInfo(() => IsMyColonist(null)))
 				.MethodReplacer(m_get_Faction, SymbolExtensions.GetMethodInfo(() => OnlyMyFaction(null)));
 		}
@@ -362,10 +361,10 @@ namespace RimBattle
 			return mapPawns.FreeColonistsSpawned.Where(Ref.controller.InMyTeam);
 		}
 
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
 			var m_get_FreeColonistsSpawned = AccessTools.Property(typeof(MapPawns), nameof(MapPawns.FreeColonistsSpawned)).GetGetMethod(true);
-			return instructions.MethodReplacer(m_get_FreeColonistsSpawned, SymbolExtensions.GetMethodInfo(() => FreeMyColonistsSpawned(null)));
+			return codes.MethodReplacer(m_get_FreeColonistsSpawned, SymbolExtensions.GetMethodInfo(() => FreeMyColonistsSpawned(null)));
 		}
 	}
 
@@ -387,10 +386,10 @@ namespace RimBattle
 			return response;
 		}
 
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
 			var m_get_UsesConfigurableHostilityResponse = AccessTools.Property(typeof(Pawn_PlayerSettings), nameof(Pawn_PlayerSettings.UsesConfigurableHostilityResponse)).GetGetMethod(true);
-			return instructions.MethodReplacer(m_get_UsesConfigurableHostilityResponse, SymbolExtensions.GetMethodInfo(() => UsesMyConfigurableHostilityResponse(null)));
+			return codes.MethodReplacer(m_get_UsesConfigurableHostilityResponse, SymbolExtensions.GetMethodInfo(() => UsesMyConfigurableHostilityResponse(null)));
 		}
 	}
 
@@ -444,10 +443,10 @@ namespace RimBattle
 			pawn.playerSettings = __state;
 		}
 
-		static Instructions Transpiler(Instructions instructions)
+		static Instructions Transpiler(Instructions codes)
 		{
 			var m_get_Configurable = AccessTools.Property(typeof(Pawn_FoodRestrictionTracker), nameof(Pawn_FoodRestrictionTracker.Configurable)).GetGetMethod(true);
-			return instructions.MethodReplacer(m_get_Configurable, SymbolExtensions.GetMethodInfo(() => ConfigurableIfOurTeam(null)));
+			return codes.MethodReplacer(m_get_Configurable, SymbolExtensions.GetMethodInfo(() => ConfigurableIfOurTeam(null)));
 		}
 	}
 
@@ -573,16 +572,24 @@ namespace RimBattle
 		}
 	}
 
-	/* rescue message only for our team
+	// suppress naming things dialogs
 	//
-	[HarmonyPatch(typeof(Alert_ColonistNeedsRescuing))]
-	[HarmonyPatch("ColonistsNeedingRescue")]
-	class Alert_ColonistNeedsRescuing_ColonistsNeedingRescue_Patch
+	[HarmonyPatch(typeof(Faction))]
+	[HarmonyPatch(nameof(Faction.FactionTick))]
+	class Faction_FactionTick_Patch
 	{
-		[HarmonyPriority(10000)]
-		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
+		static bool IsPlayer(Faction faction)
 		{
-			return pawns.Where(pawn => Ref.controller.InMyTeam(pawn));
+			_ = faction;
+			return false;
 		}
-	}*/
+
+		[HarmonyPriority(10000)]
+		static Instructions Transpiler(Instructions codes)
+		{
+			var from = AccessTools.Property(typeof(Faction), nameof(Faction.IsPlayer)).GetGetMethod(true);
+			var to = SymbolExtensions.GetMethodInfo(() => IsPlayer(null));
+			return codes.MethodReplacer(from, to);
+		}
+	}
 }
