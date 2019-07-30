@@ -26,6 +26,9 @@ namespace RimBattle
 		static readonly Type MP_TimeControl = AccessTools.TypeByName("Multiplayer.Client.TimeControl");
 		static readonly MethodInfo m_SendTimeChange = AccessTools.Method(MP_TimeControl, "SendTimeChange");
 
+		static readonly Type MP_OnMainThread = AccessTools.TypeByName("Multiplayer.Client.OnMainThread");
+		static readonly MethodInfo m_StopMultiplayer = AccessTools.Method(MP_OnMainThread, "StopMultiplayer");
+
 		public static void Checks()
 		{
 			"Type Multiplayer.Client.Multiplayer".NullCheck(MP_Multiplayer);
@@ -43,6 +46,9 @@ namespace RimBattle
 
 			"Type Multiplayer.Client.TimeControl".NullCheck(MP_TimeControl);
 			"Method Multiplayer.Client.TimeControl.SendTimeChange".NullCheck(m_SendTimeChange);
+
+			"Type Multiplayer.Client.OnMainThread".NullCheck(MP_OnMainThread);
+			"Method Multiplayer.Client.OnMainThread.StopMultiplayer".NullCheck(m_StopMultiplayer);
 		}
 
 		public static MethodInfo Method(string typeName, string methodName)
@@ -148,6 +154,11 @@ namespace RimBattle
 		public static void StartGame()
 		{
 			PlayerConnectDialog.startGame = true;
+		}
+
+		public static void Stop()
+		{
+			m_StopMultiplayer.Invoke(null, new object[0]);
 		}
 	}
 }

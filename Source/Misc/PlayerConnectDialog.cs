@@ -127,10 +127,7 @@ namespace RimBattle
 			if (Widgets.ButtonText(r, "Cancel"))
 			{
 				_ = Find.WindowStack.TryRemove(this, true);
-				if (MP.IsHosting)
-				{
-					// TODO: stop hosting!
-				}
+				MPTools.Stop();
 				GenScene.GoToMainMenu();
 			}
 
