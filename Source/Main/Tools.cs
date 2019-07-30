@@ -10,6 +10,7 @@ using System.Text;
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.Sound;
 
 // TODO: IntVec3 playerStartSpot = MapGenerator.PlayerStartSpot;
 
@@ -108,8 +109,7 @@ namespace RimBattle
 		//
 		public static void TweakStat(Thing thing, StatDef stat, ref float result)
 		{
-			var pawn = thing as Pawn;
-			if (pawn != null && pawn.RaceProps.Animal)
+			if (thing is Pawn pawn && pawn.RaceProps.Animal)
 				if (stat == StatDefOf.MinimumHandlingSkill)
 				{
 					result = 0f;
@@ -395,8 +395,7 @@ namespace RimBattle
 		//
 		public static void UpdateVisibility(Thing thing, IntVec3 pos)
 		{
-			var pawn = thing as Pawn;
-			if (pawn == null) return;
+			if (!(thing is Pawn pawn)) return;
 			var map = pawn.Map;
 			if (map == null) return;
 			if (pawn.Faction != Faction.OfPlayer) return;
@@ -465,7 +464,7 @@ namespace RimBattle
 
 			var controller = Ref.controller;
 			if (obj is Zone zone)
-				return zone.cells.Any(cell => Tools.IsVisible(zone.Map, cell));
+				return zone.cells.Any(cell => IsVisible(zone.Map, cell));
 
 			var thing = obj as Thing;
 			if (thing == null)
@@ -477,10 +476,10 @@ namespace RimBattle
 			if (thing.def.size.x != 1 || thing.def.size.z != 1)
 			{
 				var map = thing.Map;
-				return thing.OccupiedRect().Cells.Any(cell => Tools.IsVisible(map, cell));
+				return thing.OccupiedRect().Cells.Any(cell => IsVisible(map, cell));
 			}
 
-			if (Tools.IsVisible(thing) == false)
+			if (IsVisible(thing) == false)
 				return false;
 
 			var pawn = thing as Pawn;
@@ -522,10 +521,10 @@ namespace RimBattle
 				while (enumerator.MoveNext())
 				{
 					var v = enumerator.Current;
-					cells.Add(v);
-					cells.Add(new IntVec3(-v.x, 0, v.z));
-					cells.Add(new IntVec3(-v.x, 0, -v.z));
-					cells.Add(new IntVec3(v.x, 0, -v.z));
+					_ = cells.Add(v);
+					_ = cells.Add(new IntVec3(-v.x, 0, v.z));
+					_ = cells.Add(new IntVec3(-v.x, 0, -v.z));
+					_ = cells.Add(new IntVec3(v.x, 0, -v.z));
 				}
 				enumerator.Dispose();
 				Ref.circleCache[radius] = cells;
@@ -578,7 +577,7 @@ namespace RimBattle
 			});
 		}
 
-		public static byte[] PackBoolsInByteArray(bool[] bools)
+		/*public static byte[] PackBoolsInByteArray(bool[] bools)
 		{
 			var len = bools.Length;
 			var bytes = len >> 3;
@@ -590,14 +589,44 @@ namespace RimBattle
 				if (bools[i])
 					result[4 + i >> 3] |= (byte)(1 << (i & 0x07));
 			return result;
-		}
+		}*/
 
-		public static bool[] UnpackByteArrayInBools(byte[] bytes)
+		/*public static bool[] UnpackByteArrayInBools(byte[] bytes)
 		{
 			var len = BitConverter.ToInt32(bytes, 0);
 			var result = new bool[len];
 
 			return result;
+		}*/
+
+		public static bool SimpleButton(Rect rect, string label, bool active)
+		{
+			var anchor = Text.Anchor;
+			var color = GUI.color;
+			var atlas = Statics.ButtonBGAtlas;
+			if (Mouse.IsOver(rect) && active)
+			{
+				atlas = Statics.ButtonBGAtlasMouseover;
+				if (Input.GetMouseButton(0))
+					atlas = Statics.ButtonBGAtlasClick;
+			}
+			Widgets.DrawAtlas(rect, atlas);
+			MouseoverSounds.DoRegion(rect);
+			Text.Anchor = TextAnchor.MiddleCenter;
+			var wordWrap = Text.WordWrap;
+			if (rect.height < Text.LineHeight * 2f)
+				Text.WordWrap = false;
+			Widgets.Label(rect, label);
+			Text.Anchor = anchor;
+			GUI.color = color;
+			Text.WordWrap = wordWrap;
+			if (active == false)
+			{
+				var c = Widgets.WindowBGFillColor;
+				c.a = 0.5f;
+				Widgets.DrawBoxSolid(rect, c);
+			}
+			return active && Widgets.ButtonInvisible(rect, false);
 		}
 
 		// read bytes from file
@@ -608,7 +637,7 @@ namespace RimBattle
 			try
 			{
 				var folder = Path.Combine(GenFilePaths.ConfigFolderPath, "RimBattle");
-				Directory.CreateDirectory(folder);
+				_ = Directory.CreateDirectory(folder);
 				path = Path.Combine(folder, $"{name}.dat");
 				return File.ReadAllBytes(path);
 			}
@@ -626,7 +655,7 @@ namespace RimBattle
 		public static void SaveFile(string name, byte[] data)
 		{
 			var folder = Path.Combine(GenFilePaths.ConfigFolderPath, "RimBattle");
-			Directory.CreateDirectory(folder);
+			_ = Directory.CreateDirectory(folder);
 			var path = Path.Combine(folder, $"{name}.dat");
 			File.WriteAllBytes(path, data);
 		}
@@ -646,25 +675,27 @@ namespace RimBattle
 			KeyBindingDefOf.TimeSpeed_Ultrafast };
 
 			var team = Ref.controller.CurrentTeam;
+			var tile = Find.CurrentMap.Tile;
 			for (var i = 0; i <= 4; i++)
 				if (keyBindings[i].KeyDownEvent)
 				{
 					if (i > 0)
 					{
-						team.gameSpeed = i;
-						Multiplayer.SetSpeed(Ref.controller.team, team.gameSpeed);
-						continue;
+						team.SetSpeed(tile, i);
+						Event.current.Use();
+						return new Event();
 					}
 
-					if (team.gameSpeed == 0)
-						Multiplayer.SetSpeed(Ref.controller.team, team.previousSpeed);
-					else
+					var currentSpeed = team.GetSpeed(tile, false);
+					if (currentSpeed == 0)
 					{
-						team.previousSpeed = team.gameSpeed;
-						team.gameSpeed = 0;
-						Multiplayer.SetSpeed(Ref.controller.team, team.gameSpeed);
+						var previousSpeed = team.GetSpeed(tile, true);
+						team.SetSpeed(tile, previousSpeed);
+						Event.current.Use();
+						return new Event();
 					}
 
+					team.SetSpeed(tile, 0);
 					Event.current.Use();
 					return new Event();
 				}

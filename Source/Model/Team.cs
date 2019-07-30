@@ -12,8 +12,11 @@ namespace RimBattle
 		public int ticketsLeft;
 		public HashSet<Pawn> members;
 
-		public int previousSpeed = 1;
-		public int gameSpeed = 0;
+		public int previousWorldSpeed = 1;
+		public int worldSpeed = 0;
+
+		public List<int> previousMapSpeeds = new List<int>() { 1, 1, 1, 1, 1, 1, 1 };
+		public List<int> mapSpeeds = new List<int>() { 0, 0, 0, 0, 0, 0, 0 };
 
 		public Team() { }
 
@@ -29,13 +32,39 @@ namespace RimBattle
 		public void Add(Pawn pawn)
 		{
 			Ref.master(pawn.playerSettings) = master;
-			members.Add(pawn);
+			_ = members.Add(pawn);
 		}
 
 		public void Remove(Pawn pawn)
 		{
 			Ref.master(pawn.playerSettings) = null;
-			members.Remove(pawn);
+			_ = members.Remove(pawn);
+		}
+
+		public int GetSpeed(int tile, bool previous)
+		{
+			if (Multiplayer.IsUsingAsyncTime)
+			{
+				var i = Ref.controller.TileIndex(tile);
+				return previous ? previousMapSpeeds[i] : mapSpeeds[i];
+			}
+			return previous ? previousWorldSpeed : worldSpeed;
+		}
+
+		public void SetSpeed(int tile, int speed)
+		{
+			if (Multiplayer.IsUsingAsyncTime)
+			{
+				var i = Ref.controller.TileIndex(tile);
+				previousMapSpeeds[i] = mapSpeeds[i];
+				mapSpeeds[i] = speed;
+			}
+			else
+			{
+				previousWorldSpeed = worldSpeed;
+				worldSpeed = speed;
+			}
+			MPTools.SetSpeedSynced(id, tile, speed);
 		}
 
 		public void ExposeData()
@@ -45,8 +74,10 @@ namespace RimBattle
 			Scribe_Values.Look(ref name, "name");
 			Scribe_Values.Look(ref ticketsLeft, "ticketsLeft");
 			Scribe_Collections.Look(ref members, false, "members", LookMode.Reference);
-			Scribe_Values.Look(ref previousSpeed, "previousSpeed");
-			Scribe_Values.Look(ref gameSpeed, "gameSpeed");
+			Scribe_Values.Look(ref previousWorldSpeed, "previousWorldSpeed");
+			Scribe_Values.Look(ref worldSpeed, "worldSpeed");
+			Scribe_Collections.Look(ref mapSpeeds, "mapSpeeds");
+			Scribe_Collections.Look(ref previousMapSpeeds, "previousMapSpeeds");
 		}
 
 		public override string ToString()

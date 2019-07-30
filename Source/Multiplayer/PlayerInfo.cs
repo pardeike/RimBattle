@@ -27,7 +27,7 @@ namespace RimBattle
 					var value = from.GetValue();
 					if (from.GetValueType().IsEnum)
 						value = Enum.ToObject(to.GetValueType(), (byte)value);
-					to.SetValue(value);
+					_ = to.SetValue(value);
 				}
 			});
 		}

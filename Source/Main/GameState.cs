@@ -7,6 +7,8 @@ namespace RimBattle
 {
 	class GameState
 	{
+		public static string[] TeamChoices = new string[7] { "", "", "", "", "", "", "" };
+
 		// shameless copy of Game.InitNewGame()
 		// too much has changed and moved around
 		//
@@ -46,7 +48,7 @@ namespace RimBattle
 
 				game.tickManager.gameStartAbsTick = GenTicks.ConfiguredTicksAbsAtGameStart;
 
-				Ref.parts(Find.Scenario).RemoveAll(part => part is ScenPart_GameStartDialog);
+				_ = Ref.parts(Find.Scenario).RemoveAll(part => part is ScenPart_GameStartDialog);
 				var arrivalMethod = Find.Scenario.AllParts.OfType<ScenPart_PlayerPawnsArriveMethod>().First();
 				Ref.method(arrivalMethod) = PlayerPawnsArriveMethod.Standing;
 
@@ -104,9 +106,8 @@ namespace RimBattle
 			var hostWindow = Multiplayer.GetHostWindow();
 			Find.WindowStack.Add(hostWindow);
 
-			for (var i = 0; i < Ref.controller.teamCount; i++)
-				Multiplayer.SetSpeed(i, TimeSpeed.Paused);
-			MPTools.CurTimeSpeed = TimeSpeed.Paused;
+			foreach (var tile in Ref.controller.tiles)
+				MPTools.SetCurrentSpeed(tile, 0);
 		}
 
 		public static void ConnectPlayers()

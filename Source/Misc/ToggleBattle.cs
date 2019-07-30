@@ -16,10 +16,10 @@ namespace RimBattle
 			var harmony = HarmonyInstance.Create("net.pardeike.rimworld.mod.rimbattle.defs");
 			var original = SymbolExtensions.GetMethodInfo(() => DefGenerator.GenerateImpliedDefs_PostResolve());
 			var postfix = SymbolExtensions.GetMethodInfo(() => PostResolve());
-			harmony.Patch(original, null, new HarmonyMethod(postfix));
+			_ = harmony.Patch(original, null, new HarmonyMethod(postfix));
 		}
 
-		[HarmonyPriority(10000)]
+
 		static void PostResolve()
 		{
 			BattleMap = new KeyBindingDef()

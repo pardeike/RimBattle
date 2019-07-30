@@ -1,6 +1,7 @@
 ﻿using Multiplayer.API;
 using RimWorld;
 using System;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -12,6 +13,9 @@ namespace RimBattle
 		const float innerMargin = 20f;
 		readonly int cols;
 		readonly int rows;
+
+		public static bool startGame = false;
+		public static bool hideColonistBar = true;
 
 		public PlayerConnectDialog()
 		{
@@ -27,7 +31,16 @@ namespace RimBattle
 
 			optionalTitle = "Choose your team";
 			rows = Ref.controller.teamCount / 4 + 1;
-			cols = Math.Min(4, Ref.controller.teamCount);
+			cols = Math.Max(3, Math.Min(4, Ref.controller.teamCount));
+		}
+
+		public override void PreOpen()
+		{
+			base.PreOpen();
+
+			startGame = false;
+			hideColonistBar = true;
+			GameState.TeamChoices = new[] { "", "", "", "", "", "", "" };
 		}
 
 		public override Vector2 InitialSize
@@ -44,18 +57,25 @@ namespace RimBattle
 		{
 			Rect r;
 			var i = 0;
+			var weAreReady = true;
+			var myName = MP.PlayerName;
+
+			hideColonistBar = myName == null || GameState.TeamChoices.Contains(myName) == false;
+
 			for (var y = 0; y < rows && i < Ref.controller.teamCount; y++)
 				for (var x = 0; x < cols && i < Ref.controller.teamCount; x++)
 				{
 					var settlement = Find.WorldObjects.SettlementAt(Ref.controller.tiles[i]);
 					var rx = x * (size + innerMargin);
 					var ry = y * (size + innerMargin + 25);
+					weAreReady &= GameState.TeamChoices[i] != "";
 
 					r = new Rect(rx, ry, size, size);
 					Widgets.DrawBoxSolid(r, Ref.TeamColors[i]);
-					if (Ref.controller.team != i)
+					if (GameState.TeamChoices[i] == "")
 						Widgets.DrawBoxSolid(r.ExpandedBy(-4), new Color(0f, 0f, 0f, 0.8f));
-					if (Mouse.IsOver(r))
+					var clickable = GameState.TeamChoices[i] == "" || GameState.TeamChoices[i] == myName;
+					if (clickable && Mouse.IsOver(r))
 					{
 						GUI.color = Color.black;
 						Widgets.DrawBox(r);
@@ -63,8 +83,11 @@ namespace RimBattle
 						if (Event.current.type == EventType.MouseDown)
 						{
 							Event.current.Use();
-							Multiplayer.JoinTeam(i);
-							Log.Warning($"Team now {Ref.controller.team}");
+							var joining = GameState.TeamChoices[i] == "";
+							MPTools.SetPlayerTeam(myName, i, joining);
+							if (joining)
+								Ref.controller.JoinTeam(i);
+							Find.ColonistBar.MarkColonistsDirty();
 						}
 					}
 
@@ -76,7 +99,7 @@ namespace RimBattle
 					r = new Rect(rx, ry + size + 2, size, 20);
 					Text.Anchor = TextAnchor.UpperCenter;
 					Text.Font = GameFont.Tiny;
-					Widgets.Label(r, Ref.controller.team == i ? MP.PlayerName : $"Team {i + 1}");
+					Widgets.Label(r, GameState.TeamChoices[i]);
 
 					i++;
 				}
@@ -86,17 +109,29 @@ namespace RimBattle
 			Widgets.Label(r, $"{Multiplayer.players.Count}/{Ref.controller.teamCount} players connected");
 
 			r = new Rect(inRect.width - CloseButSize.x, inRect.height - CloseButSize.y, CloseButSize.x, CloseButSize.y);
-			if (Widgets.ButtonText(r, "Cancel"))
-			{
-				Find.WindowStack.TryRemove(this, true);
+			if (Tools.SimpleButton(r, "Start", weAreReady))
+				MPTools.StartGame();
 
-				// TODO: this is the start code - move it somewhere else
+			if (startGame)
+			{
+				_ = Find.WindowStack.TryRemove(this, true);
+
 				Find.MusicManagerPlay.ForceSilenceFor(7f);
 				Find.MusicManagerPlay.disabled = false;
 				Find.WindowStack.Notify_GameStartDialogClosed();
 
-				for (i = 0; i < Ref.controller.teamCount; i++)
-					Multiplayer.SetSpeed(i, TimeSpeed.Normal);
+				Ref.controller.CurrentTeam.SetSpeed(Find.CurrentMap.Tile, 1);
+			}
+
+			r = new Rect(inRect.width - 2 * CloseButSize.x - 10, inRect.height - CloseButSize.y, CloseButSize.x, CloseButSize.y);
+			if (Widgets.ButtonText(r, "Cancel"))
+			{
+				_ = Find.WindowStack.TryRemove(this, true);
+				if (MP.IsHosting)
+				{
+					// TODO: stop hosting!
+				}
+				GenScene.GoToMainMenu();
 			}
 
 			Text.Anchor = default;

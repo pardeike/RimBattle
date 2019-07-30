@@ -20,7 +20,6 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(Thing), typeof(Thing) })]
 	class GenHostility_HostileTo_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Thing a, Thing b, ref bool __result)
 		{
 			if (a is Pawn p1 && b is Pawn p2)
@@ -40,7 +39,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(GenHostility.IsActiveThreatToPlayer))]
 	class GenHostility_IsActiveThreatToPlayer_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(IAttackTarget target, ref bool __result)
 		{
 			if (target is Pawn pawn && pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
@@ -59,7 +57,6 @@ namespace RimBattle
 	[HarmonyPatch("CausesTimeSlowdown")]
 	class Verb_CausesTimeSlowdown_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Verb __instance, LocalTargetInfo castTarg, ref bool __result)
 		{
 			if (castTarg.HasThing)
@@ -80,7 +77,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(GenHostility.AnyHostileActiveThreatTo))]
 	class GenHostility_AnyHostileActiveThreatTo_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Map map, ref bool __result)
 		{
 			if (__result)
@@ -97,7 +93,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(AttackTargetsCache.GetPotentialTargetsFor))]
 	class AttackTargetsCache_GetPotentialTargetsFor_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(IAttackTargetSearcher th, ref List<IAttackTarget> __result)
 		{
 			var pawn = th.Thing as Pawn;
@@ -163,8 +158,6 @@ namespace RimBattle
 			return targetingParams;
 		}
 
-		// multi patching
-
 		static readonly MultiPatches multiPatches = new MultiPatches(
 			typeof(Hostility_MultiPatches),
 			new MultiPatchInfo(
@@ -204,7 +197,6 @@ namespace RimBattle
 			return multiPatches.TargetMethods();
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(MethodBase original, Instructions codes)
 		{
 			return multiPatches.Transpile(original, codes);

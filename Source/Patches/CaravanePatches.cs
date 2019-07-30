@@ -28,7 +28,6 @@ namespace RimBattle
 				Tools.AddFormCaravanGizmo(list);
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
 			var m_List_Gizmo_Clear = SymbolExtensions.GetMethodInfo(() => new List<Gizmo>().Clear());
@@ -56,7 +55,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Dialog_FormCaravan.InitialSize), MethodType.Getter)]
 	class Dialog_FormCaravan_InitialSize_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(ref Vector2 __result)
 		{
 			__result -= new Vector2(28, 100);
@@ -69,7 +67,6 @@ namespace RimBattle
 	[HarmonyPatch("MustChooseRoute", MethodType.Getter)]
 	class Dialog_FormCaravan_MustChooseRoute_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(ref bool __result)
 		{
 			__result = true;
@@ -84,7 +81,6 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(List<Pawn>), typeof(bool), typeof(IntVec3) }, new[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Out })]
 	class Dialog_FormCaravan_TryFindExitSpot_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Dialog_FormCaravan __instance, ref bool __result, List<Pawn> pawns, bool reachableForEveryColonist, out IntVec3 spot)
 		{
 			// second try: use original
@@ -124,7 +120,6 @@ namespace RimBattle
 	[HarmonyPatch("GetEnterCell")]
 	class CaravanEnterMapUtility_GetEnterCell_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Caravan caravan, CaravanEnterMode enterMode, ref IntVec3 __result)
 		{
 			if (enterMode != CaravanEnterMode.Edge)
@@ -161,7 +156,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(CaravanFormingUtility.StartFormingCaravan))]
 	class CaravanFormingUtility_StartFormingCaravan_Patch
 	{
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
 		{
 			var parameters = new[] { typeof(List<TransferableOneWay>), typeof(List<Pawn>), typeof(IntVec3), typeof(IntVec3), typeof(int), typeof(int) };
@@ -195,12 +189,11 @@ namespace RimBattle
 	[HarmonyPatch("SetupMoveIntoNextTile")]
 	class Caravan_PathFollower_AtDestinationPosition_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(ref Caravan_PathFollower __instance)
 		{
 			var trv = Traverse.Create(__instance);
-			trv.Field("nextTileCostTotal").SetValue(0f);
-			trv.Field("nextTileCostLeft").SetValue(0f);
+			_ = trv.Field("nextTileCostTotal").SetValue(0f);
+			_ = trv.Field("nextTileCostLeft").SetValue(0f);
 		}
 	}
 
@@ -215,7 +208,6 @@ namespace RimBattle
 			_ = stack; _ = label; _ = text; _ = textLetterDef; _ = lookTargets; _ = relatedFaction; _ = debugInfo;
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
 			var parameters = new[] { typeof(string), typeof(string), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(string) };
@@ -255,7 +247,6 @@ namespace RimBattle
 			return true;
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
 			if (m_TryFindRandomPackingSpot == null)
@@ -274,7 +265,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Dialog_FormCaravan.PostOpen))]
 	class Dialog_FormCaravan_PostOpen_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Dialog_FormCaravan __instance, List<TransferableOneWay> ___transferables)
 		{
 			___transferables.Do(transferable =>
@@ -301,7 +291,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(CaravanUIUtility.CreateCaravanTransferableWidgets))]
 	class CaravanUIUtility_CreateCaravanTransferableWidgets_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(List<TransferableOneWay> transferables, out TransferableOneWayWidget pawnsTransfer, out TransferableOneWayWidget itemsTransfer, string thingCountTip, IgnorePawnsInventoryMode ignorePawnInventoryMass, Func<float> availableMassGetter, bool ignoreSpawnedCorpsesGearAndInventoryMass, int tile, bool playerPawnsReadOnly)
 		{
 			bool IsColonist(Thing thing) => thing is Pawn && ((Pawn)thing).IsFreeColonist && Ref.controller.InMyTeam((Pawn)thing);
@@ -359,7 +348,6 @@ namespace RimBattle
 			return tabs[0]; // always first tab selected
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
 		{
 			var codes = instructions
@@ -406,7 +394,6 @@ namespace RimBattle
 		static Rect dialogRect;
 		static int buttonCount;
 
-		[HarmonyPriority(10000)]
 		static void Prefix(Dialog_FormCaravan __instance, Rect rect, ref bool ___canChooseRoute)
 		{
 			Color? IsSelected(Map map)
@@ -464,7 +451,6 @@ namespace RimBattle
 		static readonly MethodInfo m_ButtonText = SymbolExtensions.GetMethodInfo(() => Widgets.ButtonText(default, "", false, false, false));
 		static readonly MethodInfo m_ButtonTextReordered = SymbolExtensions.GetMethodInfo(() => ButtonTextReordered(default, "", false, false, false));
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
 		{
 			var codes = instructions.ToList();

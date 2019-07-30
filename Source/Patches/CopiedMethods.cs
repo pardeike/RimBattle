@@ -114,7 +114,7 @@ namespace RimBattle
 				subMesh.disabled = true;
 		}
 
-		//
+		// ???
 		//
 		public static void RegenerateZone(SectionLayer myBase, Section section)
 		{
@@ -125,7 +125,7 @@ namespace RimBattle
 			var y = AltitudeLayer.Zone.AltitudeFor();
 			var zoneManager = map.zoneManager;
 			var cellRect = new CellRect(section.botLeft.x, section.botLeft.z, 17, 17);
-			cellRect.ClipInsideMap(map);
+			_ = cellRect.ClipInsideMap(map);
 
 			foreach (var layerSubMesh in myBase.subMeshes)
 				layerSubMesh.Clear(MeshParts.All);

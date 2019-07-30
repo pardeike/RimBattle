@@ -6,7 +6,6 @@
 	[HarmonyPatch(nameof(World.FinalizeInit))]
 	class World_FinalizeInit_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
 		}
@@ -16,7 +15,6 @@
 	[HarmonyPatch(nameof(MapInterface.Notify_SwitchedMap))]
 	class MapInterface_Notify_SwitchedMap_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix()
 		{
 			Find.ColonistBar.MarkColonistsDirty();
@@ -27,14 +25,13 @@
 	[HarmonyPatch(nameof(DynamicDrawManager.DrawDynamicThings))]
 	class DynamicDrawManager_DrawDynamicThings_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Prefix(HashSet<Thing> ___drawThings, out List<Thing> __state)
 		{
 			__state = ___drawThings.ToList();
 			___drawThings.RemoveWhere(thing => Ref.controller.IsVisible(thing) == false);
 		}
 
-		[HarmonyPriority(10000)]
+		
 		static void Postfix(HashSet<Thing> ___drawThings, List<Thing> __state)
 		{
 			___drawThings.Clear();
@@ -106,7 +103,6 @@
 	[HarmonyPatch("ColonistsNeedingRescue")]
 	class Alert_ColonistNeedsRescuing_ColonistsNeedingRescue_Patch
 	{
-		[HarmonyPriority(10000)]
 		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
 		{
 			return pawns.Where(pawn => Ref.controller.InMyTeam(pawn));

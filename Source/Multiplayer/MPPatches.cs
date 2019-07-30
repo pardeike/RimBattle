@@ -32,6 +32,7 @@ namespace RimBattle
 
 		static void Postfix()
 		{
+			Multiplayer.IsUsingAsyncTime = MPTools.IsAsyncTime();
 			Ref.controller.MultiplayerEstablished(false);
 		}
 	}
@@ -62,7 +63,7 @@ namespace RimBattle
 			var player = Multiplayer.players.FirstOrDefault(p => p.id == id);
 			if (player.type != MPPlayerType.Arbiter)
 			{
-				Multiplayer.players.Remove(player);
+				_ = Multiplayer.players.Remove(player);
 				Multiplayer.dispatcher.Send(MPEventType.Disconnect, player);
 				Multiplayer.dispatcher.Send(MPEventType.ListChanged, player);
 			}

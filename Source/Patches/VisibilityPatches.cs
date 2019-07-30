@@ -94,7 +94,6 @@ namespace RimBattle
 			return multiPatches.TargetMethods();
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(MethodBase original, Instructions codes)
 		{
 			return multiPatches.Transpile(original, codes);
@@ -179,7 +178,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Thing.Position), MethodType.Setter)]
 	class Thing_Position_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Prefix(Thing __instance, IntVec3 value, IntVec3 ___positionInt)
 		{
 			if (___positionInt == value) return;
@@ -193,7 +191,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Thing.SetPositionDirect))]
 	class Thing_SetPositionDirect_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Prefix(Thing __instance, IntVec3 newPos, IntVec3 ___positionInt)
 		{
 			if (___positionInt == newPos) return;
@@ -207,7 +204,6 @@ namespace RimBattle
 	[HarmonyPatch("Notify_PrimaryWeaponChanged")]
 	class MapPawns_RegisterPawn_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Pawn ___pawn)
 		{
 			Tools.UpdateVisibility(___pawn, ___pawn.Position);
@@ -222,7 +218,6 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(Vector3), typeof(float), typeof(bool), typeof(Rot4), typeof(Rot4), typeof(RotDrawMode), typeof(bool), typeof(bool) })]
 	class PawnRenderer_RenderPawnInternal_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn ___pawn, out bool __state)
 		{
 			__state = true;
@@ -233,7 +228,6 @@ namespace RimBattle
 			return __state;
 		}
 
-		[HarmonyPriority(10000)]
 		static void Postfix(Pawn ___pawn, bool __state)
 		{
 			if (__state == false)
@@ -256,7 +250,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(ToilEffects.WithProgressBar))]
 	class ToilEffects_WithProgressBar_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Toil toil)
 		{
 			var last2 = toil.preTickActions.Count - 1;
@@ -276,7 +269,6 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(Toil), typeof(Func<EffecterDef>), typeof(Func<LocalTargetInfo>) })]
 	class ToilEffects_WithEffect_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Toil toil)
 		{
 			var i = toil.preTickActions.Count - 1;
@@ -295,7 +287,6 @@ namespace RimBattle
 	[HarmonyPatch("Draw")]
 	class Graphic_Draw_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Thing thing)
 		{
 			var pawn = thing as Pawn;
@@ -313,7 +304,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Selector.Select))]
 	class Selector_Select_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(object obj, bool forceDesignatorDeselect)
 		{
 			// Designator_ZoneAdd.set_SelectedZone does some funky stuff 
@@ -338,7 +328,6 @@ namespace RimBattle
 			return Tools.GetMethodsFromSubclasses(typeof(Designator), nameof(Designator.CanDesignateCell));
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes, ILGenerator generator)
 		{
 			if (codes.Count() > 2)
@@ -379,7 +368,6 @@ namespace RimBattle
 			return Tools.GetMethodsFromSubclasses(typeof(Designator), nameof(Designator.CanDesignateThing));
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes, ILGenerator generator)
 		{
 			if (codes.Count() > 2)
@@ -406,7 +394,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(PlayerPawnsDisplayOrderUtility.Sort))]
 	class PlayerPawnsDisplayOrderUtility_Sort_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Prefix(List<Pawn> pawns)
 		{
 			var controller = Ref.controller;
@@ -422,7 +409,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(PawnUIOverlay.DrawPawnGUIOverlay))]
 	class PawnUIOverlay_DrawPawnGUIOverlay_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn ___pawn)
 		{
 			if (Ref.controller.battleOverview.showing) return false;
@@ -439,7 +425,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Thing.DrawGUIOverlay))]
 	class Thing_DrawGUIOverlay_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Thing __instance)
 		{
 			if (Ref.controller.battleOverview.showing) return false;
@@ -461,7 +446,6 @@ namespace RimBattle
 			return grid.IsFogged(c);
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
 			return Transpilers.MethodReplacer(codes,
@@ -478,7 +462,6 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool) })]
 	class GenSpawn_Spawn_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Thing newThing, IntVec3 loc, Map map, ref Thing __result)
 		{
 			if (newThing is Mote && loc.InBounds(map))
@@ -498,10 +481,9 @@ namespace RimBattle
 	[HarmonyPatch(nameof(SectionLayer_FogOfWar.Regenerate))]
 	class SectionLayer_FogOfWar_Regenerate__Patch
 	{
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
-			codes.GetHashCode(); // make compiler happy
+			_ = codes;
 			var replacement = SymbolExtensions.GetMethodInfo(() => CopiedMethods.RegenerateFog(null));
 			yield return new CodeInstruction(OpCodes.Ldarg_0);
 			yield return new CodeInstruction(OpCodes.Call, replacement);
@@ -520,7 +502,6 @@ namespace RimBattle
 			return Tools.IsVisible(key.Map, key.Position);
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
 		{
 			var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null));
@@ -565,7 +546,6 @@ namespace RimBattle
 			return false;
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
 			_ = codes; // make compiler happy

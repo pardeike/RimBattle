@@ -23,7 +23,10 @@ namespace RimBattle
 		{
 			_ = butRect; _ = tex;
 			if (Widgets.ButtonImage(butRect, tex))
-				Multiplayer.SetSpeed(Ref.controller.team, i);
+			{
+				var tile = Find.CurrentMap.Tile;
+				Ref.controller.CurrentTeam.SetSpeed(tile, i);
+			}
 			return false;
 		}
 
@@ -48,7 +51,6 @@ namespace RimBattle
 			return multiPatches.TargetMethods();
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(MethodBase original, Instructions codes)
 		{
 			return multiPatches.Transpile(original, codes);
@@ -61,7 +63,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(WidgetRow.ToggleableIcon))]
 	class WidgetRow_ToggleableIcon_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(string tooltip)
 		{
 			return tooltip != "AutoHomeAreaToggleButton".Translate() && tooltip != "AutoRebuildButton".Translate();
@@ -74,13 +75,11 @@ namespace RimBattle
 	[HarmonyPatch(nameof(GlobalControlsUtility.DoPlaySettings))]
 	class GlobalControlsUtility_DoPlaySettings_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(ref float curBaseY)
 		{
 			curBaseY -= 20f;
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
 			return codes.Select(code =>
@@ -108,12 +107,13 @@ namespace RimBattle
 
 			var y = TimeControls.TimeButSize.y;
 			var timerRect = new Rect(leftX + 16f, curBaseY - y, width, y + choices);
+			var tile = Find.CurrentMap.Tile;
 
 			for (var speed = 0; speed < 4; speed++)
 			{
 				var rect = new Rect(leftX + 16f + speed * TimeControls.TimeButSize.x, curBaseY + 2f, TimeControls.TimeButSize.x, 2f);
 				foreach (var team in teams)
-					if (team.gameSpeed == speed)
+					if (team.GetSpeed(tile, false) == speed)
 					{
 						Widgets.DrawBoxSolid(rect, Ref.TeamColors[team.id]);
 						rect.y += 4f;
@@ -132,7 +132,6 @@ namespace RimBattle
 	[HarmonyPatch("DoManualPrioritiesCheckbox")]
 	class MainTabWindow_Work_DoManualPrioritiesCheckbox_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
 			Text.Font = GameFont.Small;
@@ -150,7 +149,6 @@ namespace RimBattle
 	[HarmonyPatch("Pawns", MethodType.Getter)]
 	class MainTabWindow_PawnTable_Pawns_Patch
 	{
-		[HarmonyPriority(10000)]
 		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
 		{
 			_ = pawns;
@@ -165,7 +163,6 @@ namespace RimBattle
 	[HarmonyPatch("Pawns", MethodType.Getter)]
 	class MainTabWindow_Animals_Pawns_Patch
 	{
-		[HarmonyPriority(10000)]
 		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
 		{
 			_ = pawns;
@@ -182,7 +179,6 @@ namespace RimBattle
 	[HarmonyPatch("MasterSelectButton_GenerateMenu")]
 	class TrainableUtility_MasterSelectButton_GenerateMenu_Patch
 	{
-		[HarmonyPriority(10000)]
 		static IEnumerable<Widgets.DropdownMenuElement<Pawn>> Postfix(IEnumerable<Widgets.DropdownMenuElement<Pawn>> menuItems)
 		{
 			return menuItems.Skip(1)
@@ -196,7 +192,6 @@ namespace RimBattle
 	[HarmonyPatch("AcceptsMessage")]
 	class Messages_AcceptsMessage_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(LookTargets lookTargets, ref bool __result)
 		{
 			if (__result == false)
@@ -212,7 +207,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Alert.DrawAt))]
 	class Alert_DrawAt_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(Alert __instance, ref Rect __result)
 		{
 			if (__instance.Active == false)
@@ -242,7 +236,6 @@ namespace RimBattle
 			}
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions instructions)
 		{
 			var codes = instructions.ToList();
@@ -262,7 +255,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(TargetHighlighter.Highlight))]
 	class TargetHighlighter_Highlight_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(GlobalTargetInfo target)
 		{
 			if (target.IsValid == false)
@@ -282,7 +274,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Pawn.TryGetAttackVerb))]
 	class Pawn_TryGetAttackVerb_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Prefix(ref bool allowManualCastWeapons)
 		{
 			allowManualCastWeapons = true;
@@ -295,7 +286,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(SickPawnVisitUtility.CanVisit))]
 	class SickPawnVisitUtility_CanVisit_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Pawn pawn, Pawn sick, ref bool __result)
 		{
 			if (__result == false) return;
@@ -403,7 +393,6 @@ namespace RimBattle
 			yield return AccessTools.Method(typeof(InspectPaneFiller), "DrawTimetableSetting");
 		}
 
-		[HarmonyPriority(10000)]
 		static bool Prefix(Pawn pawn)
 		{
 			if (pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
@@ -463,7 +452,6 @@ namespace RimBattle
 			yield return AccessTools.Property(typeof(ITab_Storage), "IsVisible").GetGetMethod(true);
 		}
 
-		[HarmonyPriority(10000)]
 		static void Postfix(ref bool __result)
 		{
 			if (__result == false) return;
@@ -479,7 +467,6 @@ namespace RimBattle
 	[HarmonyPatch("CreateVerbTargetCommand")]
 	class VerbTracker_CreateVerbTargetCommand_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Verb verb, Command_VerbTarget __result)
 		{
 			if (verb.caster is Pawn pawn && pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
@@ -493,7 +480,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Pawn.GetGizmos))]
 	class Pawn_GetGizmos_Patch
 	{
-		[HarmonyPriority(10000)]
 		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, Pawn __instance)
 		{
 			if (__instance.IsColonist && Ref.controller.InMyTeam(__instance) == false)
@@ -538,7 +524,6 @@ namespace RimBattle
 	[HarmonyPatch("CanTakeOrder")]
 	class FloatMenuMakerMap_CanTakeOrder_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Pawn pawn, ref bool __result)
 		{
 			if (__result == false)
@@ -555,7 +540,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Pawn.Kill))]
 	class Pawn_Kill_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Pawn __instance, DamageInfo? dinfo)
 		{
 			if (dinfo == null) return;
@@ -577,7 +561,6 @@ namespace RimBattle
 	[HarmonyPatch(new[] { typeof(string), typeof(string), typeof(LetterDef), typeof(LookTargets), typeof(Faction), typeof(string) })]
 	class Pawn_HealthTracker_NotifyPlayerOfKilled_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(LookTargets lookTargets)
 		{
 			var target = lookTargets.PrimaryTarget;
@@ -600,7 +583,6 @@ namespace RimBattle
 			return false;
 		}
 
-		[HarmonyPriority(10000)]
 		static Instructions Transpiler(Instructions codes)
 		{
 			var from = AccessTools.Property(typeof(Faction), nameof(Faction.IsPlayer)).GetGetMethod(true);

@@ -20,8 +20,8 @@ namespace RimBattle
 
 		public void Unsubscribe(Action<PlayerInfo> callback)
 		{
-			events[MPEventType.Connect].Remove(callback);
-			events[MPEventType.Disconnect].Remove(callback);
+			_ = events[MPEventType.Connect].Remove(callback);
+			_ = events[MPEventType.Disconnect].Remove(callback);
 		}
 
 		public void Send(MPEventType eventType, PlayerInfo info = null)

@@ -64,7 +64,7 @@ namespace RimBattle
 					Log.Error($"In {patchClass.FullName} replaceTo #{i} was not defined");
 				if (patchInfo.original != null && originals.Contains(patchInfo.original) == false)
 				{
-					originals.Add(patchInfo.original);
+					_ = originals.Add(patchInfo.original);
 					yield return patchInfo.original;
 				}
 				i++;

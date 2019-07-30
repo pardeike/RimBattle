@@ -85,11 +85,6 @@ namespace RimBattle
 			new[] { 0, 1, 5 },
 		};
 
-		public static readonly Faction[] fakeFactions = new Faction[7]
-		{
-			new Faction(), new Faction(), new Faction(), new Faction(), new Faction(), new Faction(), new Faction()
-		};
-
 		public const int forceMapSize = 75;
 		public const int startTickets = 100;
 
@@ -138,6 +133,10 @@ namespace RimBattle
 		public static readonly Texture2D[] Teams = Tools.GetTextures("Tiles/Team#", 1, 7);
 		public static readonly Material[] OwnedBy = Tools.GetMaterials("OwnedBy/OwnedBy#", 0, 6, ShaderDatabase.MetaOverlay);
 		public static readonly Material OwnedByShadow = MaterialPool.MatFrom("OwnedBy/Shadow", ShaderDatabase.MetaOverlay);
+
+		public static readonly Texture2D ButtonBGAtlas = ContentFinder<Texture2D>.Get("UI/Widgets/ButtonBG", true);
+		public static readonly Texture2D ButtonBGAtlasMouseover = ContentFinder<Texture2D>.Get("UI/Widgets/ButtonBGMouseover", true);
+		public static readonly Texture2D ButtonBGAtlasClick = ContentFinder<Texture2D>.Get("UI/Widgets/ButtonBGClick", true);
 	}
 }
 

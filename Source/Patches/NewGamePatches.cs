@@ -15,7 +15,6 @@ namespace RimBattle
 	[HarmonyPatch("CanDoNext")]
 	class Page_SelectStartingSite_CanDoNext_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(ref bool __result)
 		{
 			if (__result)
@@ -39,7 +38,6 @@ namespace RimBattle
 	[HarmonyPatch("Tile", MethodType.Getter)]
 	class WorldLayer_MouseTile_Tile_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(WorldLayer_MouseTile __instance, ref int __result)
 		{
 			if (__instance.GetType().Assembly == typeof(WorldLayer_MouseTile_Tile_Patch).Assembly)
@@ -56,7 +54,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Prefs.MaxNumberOfPlayerSettlements), MethodType.Getter)]
 	class Prefs_MaxNumberOfPlayerSettlements_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix(ref int __result)
 		{
 			__result = 7; // maximum
@@ -70,7 +67,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(ScenPart_PlayerPawnsArriveMethod.GenerateIntoMap))]
 	class ScenPart_PlayerPawnsArriveMethod_GenerateIntoMap_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
 			return Find.GameInitData.startingAndOptionalPawns.Any();
@@ -83,7 +79,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
 	class Page_CreateWorldParams_PreOpen_Patch1
 	{
-		[HarmonyPriority(10000)]
 		static void Prefix()
 		{
 			Ref.controller = Current.Game.GetComponent<GameController>();
@@ -96,7 +91,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Page_CreateWorldParams.PreOpen))]
 	class Page_CreateWorldParams_PreOpen_Patch2
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(ref float ___planetCoverage)
 		{
 			___planetCoverage = 0.05f;
@@ -109,7 +103,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Page_CreateWorldParams.DoWindowContents))]
 	class Page_CreateWorldParams_DoWindowContents_Patch
 	{
-		[HarmonyPriority(10000)]
 		static void Postfix(Rect rect)
 		{
 			ConfigGUI.DoWindowContents(rect);
@@ -122,7 +115,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(ScenPart_ConfigPage.GetConfigPages))]
 	class ScenPart_ConfigPage_GetConfigPages_Patch
 	{
-		[HarmonyPriority(10000)]
 		static IEnumerable<Page> Postfix(IEnumerable<Page> pages)
 		{
 			return pages.Where(page => page.GetType() != typeof(Page_ConfigureStartingPawns));
@@ -135,7 +127,6 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Game.InitNewGame))]
 	class Game_InitNewGame_Patch
 	{
-		[HarmonyPriority(10000)]
 		static bool Prefix()
 		{
 			GameState.InitNewGame();

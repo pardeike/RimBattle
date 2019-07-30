@@ -1,4 +1,5 @@
 ﻿using RimWorld;
+using RimWorld.Planet;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -25,7 +26,7 @@ namespace RimBattle
 		public GameController(Game game) : base()
 		{
 			_ = game;
-			team = 0; // TODO
+			team = 0;
 			mapParts = new List<MapPart>();
 			battleOverview = new BattleOverview();
 		}
@@ -42,6 +43,34 @@ namespace RimBattle
 			var teamId = pawn.GetTeamID();
 			if (teamId < 0) return null;
 			return teams[teamId];
+		}
+
+		public void JoinTeam(int team)
+		{
+			this.team = team;
+			Multiplayer.CurrentPlayer.teamID = team;
+
+			// TODO: find a way to remove this ridiculous loop
+			//
+			var allTileIndices = Tools.TeamTiles(tileCount, tileCount);
+			var teamTileIndices = Tools.TeamTiles(tileCount, teamCount);
+			var j = 0;
+			for (var i = 0; i < tiles.Count; i++)
+			{
+				var tile = tiles[i];
+				var tileIndex = allTileIndices[i];
+				var hasTeam = teamTileIndices.Contains(tileIndex);
+				if (hasTeam)
+				{
+					if (team == j)
+					{
+						var map = Tools.MapForTile(tile);
+						CameraJumper.TryJump(new GlobalTargetInfo(map.Center, map, false));
+						break;
+					}
+					j++;
+				}
+			}
 		}
 
 		public bool IsMyTeam(int team)
