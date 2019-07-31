@@ -227,6 +227,8 @@ namespace RimBattle
 	class Dialog_FormCaravan_TryFormAndSendCaravan_Patch
 	{
 		static readonly MethodInfo m_TryFindRandomPackingSpot = AccessTools.Method(typeof(Dialog_FormCaravan), "TryFindRandomPackingSpot");
+		static readonly MethodInfo m_StartFormingCaravan = AccessTools.Method(typeof(CaravanFormingUtility), nameof(CaravanFormingUtility.StartFormingCaravan));
+		static readonly MethodInfo m_StartFormingCaravanSynced = AccessTools.Method(typeof(MPTools), nameof(MPTools.StartFormingCaravan));
 
 		static bool TryFindRandomPackingSpotCloseBy(Dialog_FormCaravan dialog, IntVec3 exitSpot, out IntVec3 packingSpot)
 		{
@@ -255,7 +257,9 @@ namespace RimBattle
 			IntVec3 tmp;
 			var m_TryFindRandomPackingSpotCloseBy = SymbolExtensions.GetMethodInfo(() => TryFindRandomPackingSpotCloseBy(null, default, out tmp));
 
-			return codes.MethodReplacer(m_TryFindRandomPackingSpot, m_TryFindRandomPackingSpotCloseBy);
+			return codes
+				.MethodReplacer(m_StartFormingCaravan, m_StartFormingCaravanSynced)
+				.MethodReplacer(m_TryFindRandomPackingSpot, m_TryFindRandomPackingSpotCloseBy);
 		}
 	}
 

@@ -84,7 +84,7 @@ namespace RimBattle
 						{
 							Event.current.Use();
 							var joining = GameState.TeamChoices[i] == "";
-							MPTools.SetPlayerTeam(myName, i, joining);
+							Synced.SetPlayerTeam(myName, i, joining);
 							if (joining)
 								Ref.controller.JoinTeam(i);
 							Find.ColonistBar.MarkColonistsDirty();
@@ -110,7 +110,7 @@ namespace RimBattle
 
 			r = new Rect(inRect.width - CloseButSize.x, inRect.height - CloseButSize.y, CloseButSize.x, CloseButSize.y);
 			if (Tools.SimpleButton(r, "Start", weAreReady))
-				MPTools.StartGame();
+				Synced.StartGame();
 
 			if (startGame)
 			{

@@ -1,5 +1,6 @@
 ﻿using Harmony;
 using Multiplayer.API;
+using RimWorld;
 using System;
 using System.Collections.Generic;
 using Verse;
@@ -23,6 +24,7 @@ namespace RimBattle
 
 			MP.RegisterAll();
 			MPTools.Checks();
+			MP.RegisterSyncWorker<TransferableOneWay>(SyncWorkers.TransferableOneWaySupport);
 
 			dispatcher.Subscribe(MPEventType.Connect, (info) =>
 			{

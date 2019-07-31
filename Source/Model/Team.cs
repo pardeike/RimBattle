@@ -64,7 +64,7 @@ namespace RimBattle
 				previousWorldSpeed = worldSpeed;
 				worldSpeed = speed;
 			}
-			MPTools.SetSpeedSynced(id, tile, speed);
+			Synced.SetSpeed(id, tile, speed);
 		}
 
 		public void ExposeData()

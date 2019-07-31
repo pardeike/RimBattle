@@ -1,6 +1,8 @@
 ﻿using Harmony;
 using Multiplayer.API;
+using RimWorld;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Verse;
 
@@ -111,54 +113,18 @@ namespace RimBattle
 			Find.TickManager.CurTimeSpeed = newSpeed;
 		}
 
-		// synchronized methods
-
-		[SyncMethod]
-		public static void SetSpeedSynced(int team, int tile, int speed)
-		{
-			var tIndex = Ref.controller.TileIndex(tile);
-			if (Multiplayer.IsUsingAsyncTime)
-				Ref.controller.teams[team].mapSpeeds[tIndex] = speed;
-			else
-				Ref.controller.teams[team].worldSpeed = speed;
-
-			var teams = Ref.controller.teams;
-			var minSpeed = 4;
-			var allPause = true;
-			for (var i = 0; i < teams.Count; i++)
-			{
-				var n = Multiplayer.IsUsingAsyncTime ? teams[i].mapSpeeds[tIndex] : teams[i].worldSpeed;
-				if (n < minSpeed)
-					minSpeed = n == 0 ? 1 : n;
-				if (n > 0)
-					allPause = false;
-			}
-			if (allPause)
-				minSpeed = 0;
-
-			var timeSpeed = Ref.CachedTimeSpeedValues[minSpeed];
-			MPTools.SetCurrentSpeed(tile, timeSpeed);
-		}
-
-		[SyncMethod]
-		public static void SetPlayerTeam(string player, int team, bool joining)
-		{
-			for (var i = 0; i < GameState.TeamChoices.Length; i++)
-				if (GameState.TeamChoices[i] == player)
-					GameState.TeamChoices[i] = "";
-			if (joining)
-				GameState.TeamChoices[team] = player;
-		}
-
-		[SyncMethod]
-		public static void StartGame()
-		{
-			PlayerConnectDialog.startGame = true;
-		}
-
 		public static void Stop()
 		{
-			m_StopMultiplayer.Invoke(null, new object[0]);
+			_ = m_StopMultiplayer.Invoke(null, new object[0]);
+		}
+
+		public static void StartFormingCaravan(List<Pawn> pawns, List<Pawn> downedPawns, Faction faction, List<TransferableOneWay> transferables, IntVec3 meetingPoint, IntVec3 exitSpot, int startingTile, int destinationTile)
+		{
+			_ = faction;
+			pawns = pawns ?? new List<Pawn>();
+			downedPawns = downedPawns ?? new List<Pawn>();
+			transferables = transferables ?? new List<TransferableOneWay>();
+			Synced.StartFormingCaravan(pawns, downedPawns, transferables, meetingPoint, exitSpot, startingTile, destinationTile);
 		}
 	}
 }

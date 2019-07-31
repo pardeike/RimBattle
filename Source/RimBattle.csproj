@@ -43,6 +43,8 @@
     <Compile Include="Multiplayer\Multiplayer.cs" />
     <Compile Include="Misc\CompOwnedBy.cs" />
     <Compile Include="Multiplayer\PlayerInfo.cs" />
+    <Compile Include="Multiplayer\Synced.cs" />
+    <Compile Include="Multiplayer\SyncWorkers.cs" />
     <Compile Include="Patches\HositilityPatches.cs" />
     <Compile Include="Patches\InterfacePatches.cs" />
     <Compile Include="Main\MultiPatches.cs" />
