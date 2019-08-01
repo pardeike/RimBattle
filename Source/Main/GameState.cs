@@ -1,4 +1,5 @@
-﻿using RimWorld;
+﻿using Multiplayer.API;
+using RimWorld;
 using System.Linq;
 using Verse;
 using Verse.Profile;
@@ -7,8 +8,6 @@ namespace RimBattle
 {
 	class GameState
 	{
-		public static string[] TeamChoices = new string[7] { "", "", "", "", "", "", "" };
-
 		// shameless copy of Game.InitNewGame()
 		// too much has changed and moved around
 		//
@@ -55,6 +54,7 @@ namespace RimBattle
 				var allTiles = Ref.controller.tiles;
 				var allTileIndices = Tools.TeamTiles(Ref.controller.tileCount, Ref.controller.tileCount);
 				var teamTileIndices = Tools.TeamTiles(Ref.controller.tileCount, Ref.controller.teamCount);
+				var skipTeamsOnRemainingMaps = false;
 				for (var i = 0; i < allTiles.Count; i++)
 				{
 					var tile = allTiles[i];
@@ -63,10 +63,22 @@ namespace RimBattle
 
 					Find.GameInitData.startingAndOptionalPawns.Clear();
 					Team team = null;
-					if (hasTeam)
+					if (hasTeam && skipTeamsOnRemainingMaps == false)
 					{
-						team = Ref.controller.CreateTeam();
-						Tools.AddNewColonistsToTeam(team);
+						if (Flags.allTeamsOnFirstMap)
+						{
+							for (var j = 0; j < Ref.controller.teamCount; j++)
+							{
+								team = Ref.controller.CreateTeam();
+								Tools.AddNewColonistsToTeam(team);
+							}
+							skipTeamsOnRemainingMaps = true;
+						}
+						else
+						{
+							team = Ref.controller.CreateTeam();
+							Tools.AddNewColonistsToTeam(team);
+						}
 					}
 
 					var settlement = Tools.CreateSettlement(tile);
@@ -112,6 +124,19 @@ namespace RimBattle
 
 		public static void ConnectPlayers()
 		{
+			var idx = Ref.controller.teamChoices.IndexOf(MP.PlayerName);
+			if (idx >= 0)
+			{
+				Ref.controller.team = idx;
+				Ref.controller.JoinTeam(idx);
+				Find.ColonistBar.MarkColonistsDirty();
+
+				PlayerConnectDialog.hideColonistBar = false;
+				Ref.controller.CurrentTeam.SetSpeed(Find.CurrentMap.Tile, 1);
+
+				return;
+			}
+
 			Find.MusicManagerPlay.disabled = true;
 			Find.WindowStack.Notify_GameStartDialogOpened();
 

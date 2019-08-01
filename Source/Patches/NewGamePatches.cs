@@ -131,12 +131,6 @@ namespace RimBattle
 		{
 			GameState.InitNewGame();
 			GameState.StartMultiplayer();
-
-			// this is called from GameController.StartHosting()
-			// which is triggered by the end of the multiplayer host dialog
-			//
-			// GameState.ConnectPlayers();
-
 			return false;
 		}
 	}

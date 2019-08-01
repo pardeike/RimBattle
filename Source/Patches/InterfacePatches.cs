@@ -463,7 +463,9 @@ namespace RimBattle
 
 	// disable target command gizmos for other team members
 	//
-	[HarmonyPatch(typeof(VerbTracker))]
+	// TODO: find out if this is still necessary
+	//
+	/*[HarmonyPatch(typeof(VerbTracker))]
 	[HarmonyPatch("CreateVerbTargetCommand")]
 	class VerbTracker_CreateVerbTargetCommand_Patch
 	{
@@ -472,7 +474,7 @@ namespace RimBattle
 			if (verb.caster is Pawn pawn && pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
 				__result.Disable("CannotOrderNonControlled".Translate());
 		}
-	}
+	}*/
 
 	// only show full range of gizmos for our own team members
 	//
@@ -587,6 +589,26 @@ namespace RimBattle
 		{
 			var from = AccessTools.Property(typeof(Faction), nameof(Faction.IsPlayer)).GetGetMethod(true);
 			var to = SymbolExtensions.GetMethodInfo(() => IsPlayer(null));
+			return codes.MethodReplacer(from, to);
+		}
+	}
+
+	// suppress stupid error message in dev mode for ending whitespace
+	//
+	[HarmonyPatch(typeof(ThingWithComps))]
+	[HarmonyPatch("InspectStringPartsFromComps")]
+	class ThingWithComps_InspectStringPartsFromComps_Patch
+	{
+		static bool IsWhiteSpaceOff(char c)
+		{
+			_ = c;
+			return false;
+		}
+
+		static Instructions Transpiler(Instructions codes)
+		{
+			var from = AccessTools.Method(typeof(char), nameof(char.IsWhiteSpace), new[] { typeof(char) });
+			var to = SymbolExtensions.GetMethodInfo(() => IsWhiteSpaceOff(default));
 			return codes.MethodReplacer(from, to);
 		}
 	}

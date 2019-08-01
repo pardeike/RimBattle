@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using RimWorld;
+using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace RimBattle
@@ -157,6 +159,64 @@ namespace RimBattle
 			for (var i = 0; i < myBase.subMeshes.Count; i++)
 				if (myBase.subMeshes[i].verts.Count > 0)
 					myBase.subMeshes[i].FinalizeMesh(MeshParts.Verts | MeshParts.Tris);
+		}
+
+		// DesignateSingleCell
+		//
+		public static void DesignateSingleCell_WithTeam(Designator_Build designator, IntVec3 c, int team)
+		{
+			var entDef = Ref.entDef(designator);
+			var stuffDef = Ref.stuffDef(designator);
+			var placingRot = Ref.placingRot(designator);
+
+			Thing spawned = null;
+			if (DebugSettings.godMode || entDef.GetStatValueAbstract(StatDefOf.WorkToBuild, stuffDef) == 0f)
+			{
+				if (entDef is TerrainDef)
+					designator.Map.terrainGrid.SetTerrain(c, (TerrainDef)entDef);
+				else
+				{
+					var thing = ThingMaker.MakeThing((ThingDef)entDef, stuffDef);
+					thing.SetFactionDirect(Faction.OfPlayer);
+					spawned = GenSpawn.Spawn(thing, c, designator.Map, placingRot, WipeMode.Vanish, false);
+				}
+			}
+			else
+			{
+				GenSpawn.WipeExistingThings(c, placingRot, entDef.blueprintDef, designator.Map, DestroyMode.Deconstruct);
+				spawned = GenConstruct.PlaceBlueprintForBuild(entDef, c, designator.Map, placingRot, Faction.OfPlayer, stuffDef);
+			}
+
+			// this insertion is why we make a copy of this method
+			//
+			if (team >= 0)
+				if (spawned is ThingWithComps compThing)
+					CompOwnedBy.SetTeam(compThing, team);
+
+			MoteMaker.ThrowMetaPuffs(GenAdj.OccupiedRect(c, placingRot, entDef.Size), designator.Map);
+
+			if (entDef.PlaceWorkers != null)
+				for (var i = 0; i < entDef.PlaceWorkers.Count; i++)
+					entDef.PlaceWorkers[i].PostPlace(designator.Map, entDef, c, placingRot);
+		}
+
+		// DesignateMultiCell
+		//
+		public static void DesignateMultiCell_WithTeam(Designator_Build designator, IEnumerable<IntVec3> cells, int team)
+		{
+			var somethingSucceeded = false;
+			var flag = false;
+			foreach (var intVec in cells)
+			{
+				if (designator.CanDesignateCell(intVec).Accepted)
+				{
+					DesignateSingleCell_WithTeam(designator, intVec, team);
+					somethingSucceeded = true;
+					if (!flag)
+						flag = designator.ShowWarningForCell(intVec);
+				}
+			}
+			designator.Finalize(somethingSucceeded);
 		}
 	}
 }

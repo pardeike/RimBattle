@@ -38,11 +38,11 @@ namespace RimBattle
 		[SyncMethod]
 		public static void SetPlayerTeam(string player, int team, bool joining)
 		{
-			for (var i = 0; i < GameState.TeamChoices.Length; i++)
-				if (GameState.TeamChoices[i] == player)
-					GameState.TeamChoices[i] = "";
+			for (var i = 0; i < Ref.controller.teamChoices.Count; i++)
+				if (Ref.controller.teamChoices[i] == player)
+					Ref.controller.teamChoices[i] = "";
 			if (joining)
-				GameState.TeamChoices[team] = player;
+				Ref.controller.teamChoices[team] = player;
 		}
 
 		[SyncMethod]

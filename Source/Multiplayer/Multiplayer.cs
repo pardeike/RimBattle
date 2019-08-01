@@ -44,9 +44,10 @@ namespace RimBattle
 			return Traverse.Create(type).Field("arbiterInstance").GetValue<bool>();
 		}
 
-		public static void SetName(string name)
+		public static bool IsReplay()
 		{
-			MPTools.SetName(name);
+			var type = AccessTools.TypeByName("Multiplayer.Client.Multiplayer");
+			return Traverse.Create(type).Field("session").Field("replay").GetValue<bool>();
 		}
 
 		public static Window GetHostWindow()

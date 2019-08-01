@@ -1,24 +1,34 @@
 ﻿using Harmony;
+using Multiplayer.API;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Verse;
 
 namespace RimBattle
 {
 	using Instructions = IEnumerable<CodeInstruction>;
 
 	[HarmonyPatch]
-	class HostWindow_PostClose_Patch
+	class ClientUtil_TryConnect_Patch
 	{
 		static MethodBase TargetMethod()
 		{
-			return AccessTools.Method("Multiplayer.Client.HostWindow:PostClose");
+			return AccessTools.Method("Multiplayer.Client.ClientUtil:TryConnect");
 		}
 
-		static void Postfix()
+		static void Prefix()
 		{
-			Ref.controller.MultiplayerEstablished(true);
+			if (Multiplayer.IsArbiter())
+				return;
+
+			if (Flags.fixMultiplayerNames)
+			{
+				Log.Warning($"Fixing client username (currently {MP.PlayerName})");
+				if (MP.PlayerName == "Server")
+					MPTools.SetName("Client");
+			}
 		}
 	}
 
@@ -32,13 +42,30 @@ namespace RimBattle
 
 		static void Postfix()
 		{
-			Multiplayer.IsUsingAsyncTime = MPTools.IsAsyncTime();
-			Ref.controller.MultiplayerEstablished(false);
+			if (Multiplayer.IsReplay() == false)
+				Ref.controller.MultiplayerEstablished();
 		}
 	}
 
 	[HarmonyPatch]
-	class MPConnect_Events_Patch
+	class ClientUtil_StartServerThread_Patch
+	{
+		static MethodBase TargetMethod()
+		{
+			return AccessTools.TypeByName("Multiplayer.Client.ClientUtil")
+				.GetNestedTypes(AccessTools.all)
+				.SelectMany(type => type.GetMethods(AccessTools.all))
+				.First(method => method.Name.Contains("StartServerThread"));
+		}
+
+		static void Postfix()
+		{
+			Ref.controller.MultiplayerEstablished();
+		}
+	}
+
+	[HarmonyPatch]
+	class ClientPlayingState_HandlePlayerList_Patch
 	{
 		static MethodBase TargetMethod()
 		{

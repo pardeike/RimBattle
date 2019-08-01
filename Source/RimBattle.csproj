@@ -38,6 +38,7 @@
     <Compile Include="Misc\PlayerConnectDialog.cs" />
     <Compile Include="Multiplayer\MPEnums.cs" />
     <Compile Include="Multiplayer\MPEvents.cs" />
+    <Compile Include="Multiplayer\MPDesignators.cs" />
     <Compile Include="Multiplayer\MPPatches.cs" />
     <Compile Include="Multiplayer\MPTools.cs" />
     <Compile Include="Multiplayer\Multiplayer.cs" />

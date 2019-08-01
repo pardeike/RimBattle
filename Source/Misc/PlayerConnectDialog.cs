@@ -1,7 +1,7 @@
 ﻿using Multiplayer.API;
 using RimWorld;
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -40,7 +40,7 @@ namespace RimBattle
 
 			startGame = false;
 			hideColonistBar = true;
-			GameState.TeamChoices = new[] { "", "", "", "", "", "", "" };
+			Ref.controller.teamChoices = new List<string> { "", "", "", "", "", "", "" };
 		}
 
 		public override Vector2 InitialSize
@@ -60,7 +60,7 @@ namespace RimBattle
 			var weAreReady = true;
 			var myName = MP.PlayerName;
 
-			hideColonistBar = myName == null || GameState.TeamChoices.Contains(myName) == false;
+			hideColonistBar = myName == null || Ref.controller.teamChoices.Contains(myName) == false;
 
 			for (var y = 0; y < rows && i < Ref.controller.teamCount; y++)
 				for (var x = 0; x < cols && i < Ref.controller.teamCount; x++)
@@ -68,13 +68,13 @@ namespace RimBattle
 					var settlement = Find.WorldObjects.SettlementAt(Ref.controller.tiles[i]);
 					var rx = x * (size + innerMargin);
 					var ry = y * (size + innerMargin + 25);
-					weAreReady &= GameState.TeamChoices[i] != "";
+					weAreReady &= Ref.controller.teamChoices[i] != "";
 
 					r = new Rect(rx, ry, size, size);
 					Widgets.DrawBoxSolid(r, Ref.TeamColors[i]);
-					if (GameState.TeamChoices[i] == "")
+					if (Ref.controller.teamChoices[i] == "")
 						Widgets.DrawBoxSolid(r.ExpandedBy(-4), new Color(0f, 0f, 0f, 0.8f));
-					var clickable = GameState.TeamChoices[i] == "" || GameState.TeamChoices[i] == myName;
+					var clickable = Ref.controller.teamChoices[i] == "" || Ref.controller.teamChoices[i] == myName;
 					if (clickable && Mouse.IsOver(r))
 					{
 						GUI.color = Color.black;
@@ -83,7 +83,7 @@ namespace RimBattle
 						if (Event.current.type == EventType.MouseDown)
 						{
 							Event.current.Use();
-							var joining = GameState.TeamChoices[i] == "";
+							var joining = Ref.controller.teamChoices[i] == "";
 							Synced.SetPlayerTeam(myName, i, joining);
 							if (joining)
 								Ref.controller.JoinTeam(i);
@@ -99,7 +99,7 @@ namespace RimBattle
 					r = new Rect(rx, ry + size + 2, size, 20);
 					Text.Anchor = TextAnchor.UpperCenter;
 					Text.Font = GameFont.Tiny;
-					Widgets.Label(r, GameState.TeamChoices[i]);
+					Widgets.Label(r, Ref.controller.teamChoices[i]);
 
 					i++;
 				}

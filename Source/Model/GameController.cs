@@ -19,6 +19,7 @@ namespace RimBattle
 
 		public BattleOverview battleOverview;
 		public List<MapPart> mapParts;
+		public List<string> teamChoices = new List<string> { "", "", "", "", "", "", "" };
 
 		public int team;
 		public List<Team> teams = new List<Team>();
@@ -86,12 +87,10 @@ namespace RimBattle
 			mapParts.Add(map.GetComponent<MapPart>());
 		}
 
-		public void MultiplayerEstablished(bool isServer)
+		public void MultiplayerEstablished()
 		{
-			if (isServer)
-				LongEventHandler.QueueLongEvent(GameState.ConnectPlayers, "Wait4Players", false, null);
-			else
-				GameState.ConnectPlayers();
+			Multiplayer.IsUsingAsyncTime = MPTools.IsAsyncTime();
+			GameState.ConnectPlayers();
 		}
 
 		public override void GameComponentTick()
@@ -169,6 +168,7 @@ namespace RimBattle
 			Scribe_Values.Look(ref maxQuadrums, "maxQuadrums");
 			Scribe_Collections.Look(ref tiles, "tiles");
 			Scribe_Collections.Look(ref teams, "teams", LookMode.Deep);
+			Scribe_Collections.Look(ref teamChoices, "teamChoices");
 
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{

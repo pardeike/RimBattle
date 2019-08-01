@@ -43,27 +43,29 @@ namespace RimBattle
 				CompOwnedBy.SetTeam(thing as ThingWithComps, owner);
 		}
 
-		static readonly MethodInfo m_MySetFactionDirect2 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, 0));
+		// Seems not necessary anymore because we patch this in MPDesignators
+		//
+		/*static readonly MethodInfo m_MySetFactionDirect2 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, 0));
 		static void MySetFactionDirect(Thing thing, Faction newFaction, int team)
 		{
 			thing.SetFactionDirect(newFaction);
 			if (newFaction == Faction.OfPlayer)
 				CompOwnedBy.SetTeam(thing as ThingWithComps, team);
-		}
+		}*/
 
-		static readonly MethodInfo m_PlaceBlueprintForBuild = SymbolExtensions.GetMethodInfo(() => GenConstruct.PlaceBlueprintForBuild(default, default, null, default, null, null));
+		/*static readonly MethodInfo m_PlaceBlueprintForBuild = SymbolExtensions.GetMethodInfo(() => GenConstruct.PlaceBlueprintForBuild(default, default, null, default, null, null));
 		static readonly MethodInfo m_MyPlaceBlueprintForBuild = SymbolExtensions.GetMethodInfo(() => MyPlaceBlueprintForBuild(default, default, null, default, null, null, 0));
 		static Blueprint_Build MyPlaceBlueprintForBuild(BuildableDef sourceDef, IntVec3 center, Map map, Rot4 rotation, Faction faction, ThingDef stuff, int team)
 		{
 			var blueprint = GenConstruct.PlaceBlueprintForBuild(sourceDef, center, map, rotation, faction, stuff);
 			CompOwnedBy.SetTeam(blueprint, team);
 			return blueprint;
-		}
+		}*/
 
-		static int CurrentTeam()
+		/*static int CurrentTeam()
 		{
 			return Ref.controller.team;
-		}
+		}*/
 
 		static readonly MultiPatches multiPatches = new MultiPatches(
 			typeof(OwnedByTeam_MultiPatches),
@@ -76,7 +78,7 @@ namespace RimBattle
 				AccessTools.Method(typeof(Blueprint), nameof(Blueprint.TryReplaceWithSolidThing)),
 				m_SetFactionDirect, m_MySetFactionDirect1,
 				new CodeInstruction(OpCodes.Ldarg_1)
-			),
+			)/*,
 			new MultiPatchInfo(
 				AccessTools.Method(typeof(Designator_Build), nameof(Designator_Build.DesignateSingleCell)),
 				m_SetFactionDirect, m_MySetFactionDirect2,
@@ -86,7 +88,7 @@ namespace RimBattle
 				AccessTools.Method(typeof(Designator_Build), nameof(Designator_Build.DesignateSingleCell)),
 				m_PlaceBlueprintForBuild, m_MyPlaceBlueprintForBuild,
 				new CodeInstruction(OpCodes.Call, SymbolExtensions.GetMethodInfo(() => CurrentTeam()))
-			)
+			)*/
 		);
 
 		static IEnumerable<MethodBase> TargetMethods()

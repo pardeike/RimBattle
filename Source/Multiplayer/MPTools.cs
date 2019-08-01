@@ -31,6 +31,16 @@ namespace RimBattle
 		static readonly Type MP_OnMainThread = AccessTools.TypeByName("Multiplayer.Client.OnMainThread");
 		static readonly MethodInfo m_StopMultiplayer = AccessTools.Method(MP_OnMainThread, "StopMultiplayer");
 
+		static readonly Type MP_Sync = AccessTools.TypeByName("Multiplayer.Client.Sync");
+		static readonly Dictionary<Type, MethodInfo> m_ReadSync = new Dictionary<Type, MethodInfo>()
+		{
+			{ typeof(int), AccessTools.Method(MP_Sync, "ReadSync").MakeGenericMethod(typeof(int)) }
+		};
+		static readonly Dictionary<Type, MethodInfo> m_WriteSync = new Dictionary<Type, MethodInfo>()
+		{
+			{ typeof(int), AccessTools.Method(MP_Sync, "WriteSync").MakeGenericMethod(typeof(int)) }
+		};
+
 		public static void Checks()
 		{
 			"Type Multiplayer.Client.Multiplayer".NullCheck(MP_Multiplayer);
@@ -51,6 +61,12 @@ namespace RimBattle
 
 			"Type Multiplayer.Client.OnMainThread".NullCheck(MP_OnMainThread);
 			"Method Multiplayer.Client.OnMainThread.StopMultiplayer".NullCheck(m_StopMultiplayer);
+
+			"Type Multiplayer.Client.Sync".NullCheck(MP_Sync);
+			foreach (var type in m_ReadSync.Keys)
+				$"Method Multiplayer.Client.Sync.ReadSync<{type}>()".NullCheck(m_ReadSync[type]);
+			foreach (var type in m_WriteSync.Keys)
+				$"Method Multiplayer.Client.Sync.WriteSync<{type}>()".NullCheck(m_WriteSync[type]);
 		}
 
 		public static MethodInfo Method(string typeName, string methodName)
@@ -63,7 +79,7 @@ namespace RimBattle
 
 		public static void SetName(string name)
 		{
-			_ = Traverse.Create(MPTools.MP_Multiplayer).Field("username").SetValue(name);
+			_ = Traverse.Create(MP_Multiplayer).Field("username").SetValue(name);
 		}
 
 		public static bool IsAsyncTime()
@@ -125,6 +141,18 @@ namespace RimBattle
 			downedPawns = downedPawns ?? new List<Pawn>();
 			transferables = transferables ?? new List<TransferableOneWay>();
 			Synced.StartFormingCaravan(pawns, downedPawns, transferables, meetingPoint, exitSpot, startingTile, destinationTile);
+		}
+
+		public static T SyncRead<T>(object byteReader)
+		{
+			Log.Warning($"SyncRead byteWrite: {byteReader.GetType().FullName}, value: {typeof(T).FullName}");
+			return (T)m_ReadSync[typeof(T)].Invoke(null, new object[] { byteReader });
+		}
+
+		public static void SyncWrite<T>(object byteWriter, T value)
+		{
+			Log.Warning($"SyncWrite byteWrite: {byteWriter.GetType().FullName}, T: {typeof(T).FullName}, value: {value.GetType().FullName}");
+			_ = m_WriteSync[typeof(T)].Invoke(null, new object[] { byteWriter, value });
 		}
 	}
 }

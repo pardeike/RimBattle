@@ -5,6 +5,13 @@ using Verse;
 
 namespace RimBattle
 {
+	class Flags
+	{
+		public static bool fixMultiplayerNames = true;
+		public static bool allTeamsOnFirstMap = true;
+		public static bool startPaused = true;
+	}
+
 	[StaticConstructorOnStartup]
 	class RimBattlePatches
 	{
