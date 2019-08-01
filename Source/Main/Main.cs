@@ -14,6 +14,7 @@ namespace RimBattle
 	 * - ticket display
 	 * 
 	 * Patches
+	 * - don't take reserved work from others (same cell)
 	 * - patch away designation icons (hunting, plant cutting, mining etc)
 	 * - patch away selection and cursor of other teams
 	 * - make colonists spawn with equipped weapons or let them auto equip

@@ -1,12 +1,14 @@
 ﻿using Harmony;
 using RimWorld;
 using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace RimBattle
 {
@@ -542,9 +544,9 @@ namespace RimBattle
 	[HarmonyPatch(nameof(Pawn.Kill))]
 	class Pawn_Kill_Patch
 	{
-		static void Postfix(Pawn __instance, DamageInfo? dinfo)
+		static void Prefix(Pawn __instance, DamageInfo? dinfo)
 		{
-			if (dinfo == null) return;
+			if (dinfo == null || dinfo.HasValue == false) return;
 			var killer = dinfo.Value.Instigator as Pawn;
 			if (killer == null) return;
 			var weapon = "";
@@ -593,7 +595,7 @@ namespace RimBattle
 		}
 	}
 
-	// suppress stupid error message in dev mode for ending whitespace
+	// suppress error message in dev mode for ending whitespace
 	//
 	[HarmonyPatch(typeof(ThingWithComps))]
 	[HarmonyPatch("InspectStringPartsFromComps")]
@@ -613,7 +615,8 @@ namespace RimBattle
 		}
 
 	}
-	// suppress stupid error message for inspect text with empty lines
+
+	// suppress error message for inspect text with empty lines
 	//
 	[HarmonyPatch(typeof(InspectPaneFiller))]
 	[HarmonyPatch(nameof(InspectPaneFiller.DrawInspectStringFor))]
@@ -630,6 +633,49 @@ namespace RimBattle
 			var from = SymbolExtensions.GetMethodInfo(() => GenText.ContainsEmptyLines(default));
 			var to = SymbolExtensions.GetMethodInfo(() => ContainsEmptyLinesOff(default));
 			return codes.MethodReplacer(from, to);
+		}
+	}
+
+	// add FailOnUnowned toil to a lot of job drivers
+	//
+	class JobDriver_MakeNewToils_Patch
+	{
+		static readonly Type[] types = new[]
+		{
+			typeof(JobDriver_CarryToCryptosleepCasket),
+			typeof(JobDriver_EnterCryptosleepCasket),
+			typeof(JobDriver_EnterTransporter),
+			typeof(JobDriver_FillFermentingBarrel),
+			typeof(JobDriver_FixBrokenDownBuilding),
+			typeof(JobDriver_Flick),
+			typeof(JobDriver_HaulToTransporter),
+			typeof(JobDriver_ManTurret),
+			typeof(JobDriver_OperateDeepDrill),
+			typeof(JobDriver_OperateScanner),
+			typeof(JobDriver_Refuel),
+			typeof(JobDriver_RefuelAtomic),
+			typeof(JobDriver_RemoveBuilding),
+			typeof(JobDriver_RemoveFloor),
+			typeof(JobDriver_Repair),
+			typeof(JobDriver_Research),
+			typeof(JobDriver_SmoothFloor),
+			typeof(JobDriver_SmoothWall),
+			typeof(JobDriver_TakeBeerOutOfFermentingBarrel),
+			typeof(JobDriver_TakeToBed),
+			typeof(JobDriver_Uninstall),
+			typeof(JobDriver_UseCommsConsole),
+			typeof(JobDriver_UseItem),
+		};
+
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			foreach (var type in types)
+				yield return AccessTools.Method(type, "MakeNewToils");
+		}
+
+		static void Prefix(JobDriver __instance)
+		{
+			_ = __instance.FailOnUnowned(TargetIndex.A);
 		}
 	}
 }

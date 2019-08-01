@@ -378,6 +378,31 @@ namespace RimBattle
 			return ownedBy != null ? ownedBy.team : -1;
 		}
 
+		// make a toil for owned things
+		// TODO: will not prevent the menu but prevents the excution
+		//
+		public static T FailOnUnowned<T>(this T f, TargetIndex ind) where T : IJobEndable
+		{
+			f.AddEndCondition(delegate
+			{
+				var actor = f.GetActor();
+				var actorTeam = actor.GetTeamID();
+				if (actorTeam < 0)
+					return JobCondition.Ongoing;
+
+				var thing = actor.jobs.curJob.GetTarget(ind).Thing;
+				if (thing is Pawn pawn && pawn.GetTeamID() != actorTeam)
+					return JobCondition.Ongoing;
+
+				var ownedByTeam = thing.OwnedByTeam();
+				if (ownedByTeam < 0)
+					return JobCondition.Ongoing;
+
+				return actorTeam != ownedByTeam ? JobCondition.Incompletable : JobCondition.Ongoing;
+			});
+			return f;
+		}
+
 		// get team id of a colonist
 		//
 		public static int GetTeamID(this Pawn pawn)
