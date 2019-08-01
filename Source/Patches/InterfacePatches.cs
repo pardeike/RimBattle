@@ -611,5 +611,25 @@ namespace RimBattle
 			var to = SymbolExtensions.GetMethodInfo(() => IsWhiteSpaceOff(default));
 			return codes.MethodReplacer(from, to);
 		}
+
+	}
+	// suppress stupid error message for inspect text with empty lines
+	//
+	[HarmonyPatch(typeof(InspectPaneFiller))]
+	[HarmonyPatch(nameof(InspectPaneFiller.DrawInspectStringFor))]
+	class InspectPaneFiller_DrawInspectStringFor_Patch
+	{
+		static bool ContainsEmptyLinesOff(string str)
+		{
+			_ = str;
+			return false;
+		}
+
+		static Instructions Transpiler(Instructions codes)
+		{
+			var from = SymbolExtensions.GetMethodInfo(() => GenText.ContainsEmptyLines(default));
+			var to = SymbolExtensions.GetMethodInfo(() => ContainsEmptyLinesOff(default));
+			return codes.MethodReplacer(from, to);
+		}
 	}
 }

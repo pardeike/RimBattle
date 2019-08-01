@@ -116,7 +116,7 @@ namespace RimBattle
 				subMesh.disabled = true;
 		}
 
-		// ???
+		// TODO: ???
 		//
 		public static void RegenerateZone(SectionLayer myBase, Section section)
 		{

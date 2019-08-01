@@ -132,7 +132,7 @@ namespace RimBattle
 				Find.ColonistBar.MarkColonistsDirty();
 
 				PlayerConnectDialog.hideColonistBar = false;
-				Ref.controller.CurrentTeam.SetSpeed(Find.CurrentMap.Tile, 1);
+				Ref.controller.CurrentTeam.SetSpeed(Find.CurrentMap.Tile, Flags.startPaused ? 0 : 1);
 
 				return;
 			}

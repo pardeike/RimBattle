@@ -18,6 +18,7 @@ namespace RimBattle
 		{
 			yield return AccessTools.Method("Multiplayer.Client.DesignatorPatches:DesignateSingleCell");
 			yield return AccessTools.Method("Multiplayer.Client.DesignatorPatches:DesignateMultiCell");
+			yield return AccessTools.Method("Multiplayer.Client.DesignatorPatches:DesignateThing");
 		}
 
 		static void SyncWriteCurrentTeam(object byteWriter)
@@ -70,13 +71,25 @@ namespace RimBattle
 			designator.DesignateMultiCell(cells);
 		}
 
+		static readonly MethodInfo m_DesignateThing = AccessTools.Method(typeof(Designator), "DesignateThing");
+		static readonly MethodInfo m_MyDesignateThing = SymbolExtensions.GetMethodInfo(() => MyDesignateThing(null, default, null));
+		static void MyDesignateThing(Designator designator, Thing thing, object data)
+		{
+			var team = MPTools.SyncRead<int>(data);
+			designator.DesignateThing(thing);
+
+			if (designator is Designator_Claim || designator is Designator_SmoothSurface)
+				if (thing is ThingWithComps compThing)
+					CompOwnedBy.SetTeam(compThing, team);
+		}
+
+		static readonly MethodInfo m_HandleDesignator = AccessTools.Method("Multiplayer.Client.MapAsyncTimeComp:HandleDesignator");
+		static readonly CodeInstruction ldarg2 = new CodeInstruction(OpCodes.Ldarg_2);
 		static readonly MultiPatches multiPatches = new MultiPatches(
 			typeof(OwnedByTeam_MultiPatches),
-			new MultiPatchInfo(
-				AccessTools.Method("Multiplayer.Client.MapAsyncTimeComp:HandleDesignator"),
-				m_DesignateMultiCell, m_MyDesignateMultiCell,
-				new CodeInstruction(OpCodes.Ldarg_2)
-			)
+			new MultiPatchInfo(m_HandleDesignator, m_DesignateSingleCell, m_MyDesignateSingleCell, ldarg2),
+			new MultiPatchInfo(m_HandleDesignator, m_DesignateMultiCell, m_MyDesignateMultiCell, ldarg2),
+			new MultiPatchInfo(m_HandleDesignator, m_DesignateThing, m_MyDesignateThing, ldarg2)
 		);
 
 		static IEnumerable<MethodBase> TargetMethods()

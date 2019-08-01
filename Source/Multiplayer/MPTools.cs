@@ -145,13 +145,11 @@ namespace RimBattle
 
 		public static T SyncRead<T>(object byteReader)
 		{
-			Log.Warning($"SyncRead byteWrite: {byteReader.GetType().FullName}, value: {typeof(T).FullName}");
 			return (T)m_ReadSync[typeof(T)].Invoke(null, new object[] { byteReader });
 		}
 
 		public static void SyncWrite<T>(object byteWriter, T value)
 		{
-			Log.Warning($"SyncWrite byteWrite: {byteWriter.GetType().FullName}, T: {typeof(T).FullName}, value: {value.GetType().FullName}");
 			_ = m_WriteSync[typeof(T)].Invoke(null, new object[] { byteWriter, value });
 		}
 	}

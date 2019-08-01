@@ -95,7 +95,7 @@ namespace RimBattle
 
 		public static readonly FieldRef<Designator_Build, BuildableDef> entDef = FieldRefAccess<Designator_Build, BuildableDef>("entDef");
 		public static readonly FieldRef<Designator_Build, ThingDef> stuffDef = FieldRefAccess<Designator_Build, ThingDef>("stuffDef");
-		public static readonly FieldRef<Designator_Build, Rot4> placingRot = FieldRefAccess<Designator_Build, Rot4>("stuffDef");
+		public static readonly FieldRef<Designator_Place, Rot4> placingRot = FieldRefAccess<Designator_Place, Rot4>("placingRot");
 		public static readonly FieldRef<Scenario, List<ScenPart>> parts = FieldRefAccess<Scenario, List<ScenPart>>("parts");
 		public static readonly FieldRef<ScenPart_PlayerPawnsArriveMethod, PlayerPawnsArriveMethod> method = FieldRefAccess<ScenPart_PlayerPawnsArriveMethod, PlayerPawnsArriveMethod>("method");
 		public static readonly FieldRef<Pawn_PlayerSettings, Pawn> master = FieldRefAccess<Pawn_PlayerSettings, Pawn>("master");
