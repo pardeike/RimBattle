@@ -120,7 +120,7 @@ namespace RimBattle
 				Find.MusicManagerPlay.disabled = false;
 				Find.WindowStack.Notify_GameStartDialogClosed();
 
-				Ref.controller.CurrentTeam.SetSpeed(Find.CurrentMap.Tile, 1);
+				Ref.controller.CurrentTeam.SetSpeed(Find.CurrentMap.Tile, Flags.startPaused ? 0 : 1);
 			}
 
 			r = new Rect(inRect.width - 2 * CloseButSize.x - 10, inRect.height - CloseButSize.y, CloseButSize.x, CloseButSize.y);

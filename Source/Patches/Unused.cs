@@ -2,6 +2,17 @@
 {
 	// maybe used later
 
+	/*[HarmonyPatch(typeof(VerbTracker))]
+	[HarmonyPatch("CreateVerbTargetCommand")]
+	class VerbTracker_CreateVerbTargetCommand_Patch
+	{
+		static void Postfix(Verb verb, Command_VerbTarget __result)
+		{
+			if (verb.caster is Pawn pawn && pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
+				__result.Disable("CannotOrderNonControlled".Translate());
+		}
+	}*/
+
 	/*[HarmonyPatch(typeof(World))]
 	[HarmonyPatch(nameof(World.FinalizeInit))]
 	class World_FinalizeInit_Patch

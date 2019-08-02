@@ -69,6 +69,11 @@ namespace RimBattle
 				return;
 			}
 			designator.DesignateMultiCell(cells);
+			if (designator is Designator_ZoneAdd zoneAddDesignator)
+			{
+				var team = MPTools.SyncRead<int>(data);
+				Find.Selector.SelectedZone.SetTeam(team);
+			}
 		}
 
 		static readonly MethodInfo m_DesignateThing = AccessTools.Method(typeof(Designator), "DesignateThing");

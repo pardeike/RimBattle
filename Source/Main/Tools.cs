@@ -378,6 +378,19 @@ namespace RimBattle
 			return ownedBy != null ? ownedBy.team : -1;
 		}
 
+		// get which team owns a zone
+		//
+		public static int OwnedByTeam(this Zone zone)
+		{
+			return (zone.ID / Ref.zoneIDFactor) - 1;
+		}
+
+		// set team of zone
+		public static void SetTeam(this Zone zone, int team)
+		{
+			zone.ID += Ref.zoneIDFactor * (1 + team);
+		}
+
 		// make a toil for owned things
 		// TODO: will not prevent the menu but prevents the excution
 		//
@@ -489,7 +502,11 @@ namespace RimBattle
 
 			var controller = Ref.controller;
 			if (obj is Zone zone)
+			{
+				if (zone.OwnedByTeam() != Ref.controller.team)
+					return false;
 				return zone.cells.Any(cell => IsVisible(zone.Map, cell));
+			}
 
 			var thing = obj as Thing;
 			if (thing == null)
@@ -521,7 +538,7 @@ namespace RimBattle
 		//
 		public static IEnumerable<MethodBase> GetMethodsFromSubclasses(Type baseType, string methodName)
 		{
-			return GenTypes.AllSubclassesNonAbstract(baseType)
+			return GenTypes.AllSubclasses/*AllSubclassesNonAbstract*/(baseType)
 				.Select(type => type.GetMethod(methodName, AccessTools.all | BindingFlags.DeclaredOnly))
 				.Where(method => method != null)
 				.Cast<MethodBase>();

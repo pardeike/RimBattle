@@ -116,7 +116,7 @@ namespace RimBattle
 				subMesh.disabled = true;
 		}
 
-		// TODO: ???
+		// custom zone visibility
 		//
 		public static void RegenerateZone(SectionLayer myBase, Section section)
 		{
@@ -139,7 +139,7 @@ namespace RimBattle
 						continue;
 
 					var zone = zoneManager.ZoneAt(new IntVec3(i, 0, j));
-					if (zone != null && !zone.hidden)
+					if (zone != null && !zone.hidden && zone.OwnedByTeam() == Ref.controller.team)
 					{
 						var subMesh = myBase.GetSubMesh(zone.Material);
 						var count = subMesh.verts.Count;

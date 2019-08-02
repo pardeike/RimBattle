@@ -123,6 +123,8 @@ namespace RimBattle
 		public static readonly Color groundColor = new ColorInt(100, 77, 58).ToColor;
 		public static readonly Color mountainColor = new ColorInt(58, 63, 63).ToColor;
 		public static readonly Color animalColor = new ColorInt(128, 128, 128).ToColor;
+
+		public static readonly int zoneIDFactor = 100000;
 	}
 
 	[StaticConstructorOnStartup]

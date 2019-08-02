@@ -463,21 +463,6 @@ namespace RimBattle
 		}
 	}
 
-	// disable target command gizmos for other team members
-	//
-	// TODO: find out if this is still necessary
-	//
-	/*[HarmonyPatch(typeof(VerbTracker))]
-	[HarmonyPatch("CreateVerbTargetCommand")]
-	class VerbTracker_CreateVerbTargetCommand_Patch
-	{
-		static void Postfix(Verb verb, Command_VerbTarget __result)
-		{
-			if (verb.caster is Pawn pawn && pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
-				__result.Disable("CannotOrderNonControlled".Translate());
-		}
-	}*/
-
 	// only show full range of gizmos for our own team members
 	//
 	[HarmonyPatch(typeof(Pawn))]
@@ -504,7 +489,7 @@ namespace RimBattle
 	// only show gizmos on owned things
 	//
 	[HarmonyPatch]
-	class Things_GetGizmos_Patch
+	class Things_GetGizmos_Patches
 	{
 		static IEnumerable<MethodBase> TargetMethods()
 		{
@@ -512,6 +497,27 @@ namespace RimBattle
 		}
 
 		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, ThingWithComps __instance)
+		{
+			var team = __instance.OwnedByTeam();
+			if (team != -1 && team != Ref.controller.team)
+				yield break;
+
+			foreach (var gimzo in gizmos)
+				yield return gimzo;
+		}
+	}
+
+	// only show gizmos on owned zones
+	//
+	[HarmonyPatch]
+	class Zones_GetGizmos_Patches
+	{
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			return Tools.GetMethodsFromSubclasses(typeof(Zone), nameof(Zone.GetGizmos));
+		}
+
+		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, Zone __instance)
 		{
 			var team = __instance.OwnedByTeam();
 			if (team != -1 && team != Ref.controller.team)
@@ -636,7 +642,8 @@ namespace RimBattle
 		}
 	}
 
-	// add FailOnUnowned toil to a lot of job drivers
+	// prevent internal job queueing from taking jobs that are on not-owned things
+	// by adding FailOnUnowned toil to a lot of job drivers
 	//
 	class JobDriver_MakeNewToils_Patch
 	{
