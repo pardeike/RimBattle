@@ -55,5 +55,11 @@ namespace RimBattle
 			var type = AccessTools.TypeByName("Multiplayer.Client.HostWindow");
 			return Activator.CreateInstance(type, new object[] { null, false }) as Window;
 		}
+
+		public static void MultiplayerEstablished()
+		{
+			Multiplayer.IsUsingAsyncTime = MPTools.IsAsyncTime();
+			GameState.ConnectPlayers();
+		}
 	}
 }

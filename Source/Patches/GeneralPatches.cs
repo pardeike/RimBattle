@@ -1,7 +1,6 @@
 ﻿using Harmony;
 using RimWorld;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 using Verse;
 
@@ -136,9 +135,26 @@ namespace RimBattle
 		}
 	}
 
+	// make sure basic skills exist
+	//
+	[HarmonyPatch(typeof(SkillRecord))]
+	[HarmonyPatch(nameof(SkillRecord.TotallyDisabled), MethodType.Getter)]
+	class SkillRecord_TotallyDisabled_Patch
+	{
+		static bool Prefix(SkillRecord __instance, ref bool __result)
+		{
+			if (Flags.setMinimumSkills.Contains(__instance.def))
+			{
+				__result = false;
+				return false;
+			}
+			return true;
+		}
+	}
+
 	// allow anyone to build
 	//
-	[HarmonyPatch(typeof(GenConstruct))]
+	/*[HarmonyPatch(typeof(GenConstruct))]
 	[HarmonyPatch(nameof(GenConstruct.CanConstruct))]
 	class GenConstruct_CanConstruct_Patch
 	{
@@ -146,11 +162,11 @@ namespace RimBattle
 		{
 			checkConstructionSkill = false;
 		}
-	}
+	}*/
 
 	// allow anyone to craft
 	//
-	[HarmonyPatch]
+	/*[HarmonyPatch]
 	class RecipeDef_PawnSatisfiesSkillRequirements_Patch
 	{
 		static IEnumerable<MethodBase> TargetMethods()
@@ -164,5 +180,5 @@ namespace RimBattle
 			__result = true;
 			return false;
 		}
-	}
+	}*/
 }

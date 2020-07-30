@@ -51,7 +51,7 @@ namespace RimBattle
 			if (repainting)
 			{
 				if (!updated)
-					UpdateTexture();
+					_ = UpdateTexture();
 
 				if (isSelected.HasValue)
 				{
@@ -91,7 +91,7 @@ namespace RimBattle
 			}
 
 			var fogGrid = map.fogGrid;
-			var visibleGrid = map.GetComponent<MapPart>().visibility;
+			var visibleGrid = map.GetComponent<Visibility>();
 			map.mapPawns.AllPawns.Do(pawn =>
 			{
 				if (pawn.Position.IsValid == false)
@@ -102,20 +102,20 @@ namespace RimBattle
 				if (pawn.RaceProps.Humanlike == false && pawn.RaceProps.Animal == false)
 					return;
 
+				var team = pawn.IsColonist ? pawn.GetTeamID() : -1;
 				var cellIndex = map.cellIndices.CellToIndex(pawn.Position);
-				if (fogGrid.IsFogged(cellIndex) || visibleGrid.IsVisible(cellIndex) == false || Ref.controller.IsInVisibleRange(pawn) == false)
+
+				if (fogGrid.IsFogged(cellIndex) || visibleGrid.IsVisible(team, cellIndex) == false || Ref.controller.IsInVisibleRange(pawn) == false)
 					return;
 
 				var r = Marker(pawn);
 				var hostile = pawn.HostileTo(Faction.OfPlayer);
-				var colonist = pawn.IsColonist;
 
 				MouseoverSounds.DoRegion(r, SoundDefOf.Mouseover_Standard);
 
 				if (repainting)
 				{
-					var team = colonist ? pawn.GetTeamID() : -1;
-					if (team == Ref.controller.team) team = -1;
+					if (Ref.controller.IsCurrentTeam(team)) team = -1;
 					var color = team >= 0 ? Ref.TeamColors[team] : (pawn.RaceProps.Animal ? Color.gray : PawnNameColorUtility.PawnNameColorOf(pawn));
 					color.a = canSelect || isCurrent ? 1f : 0.4f;
 					Widgets.DrawBoxSolid(r, color);
@@ -170,11 +170,12 @@ namespace RimBattle
 
 			if (texture.width != mapSizeX || texture.height != mapSizeZ)
 			{
-				texture.Resize(mapSizeX, mapSizeZ);
+				_ = texture.Resize(mapSizeX, mapSizeZ);
 				texture.Apply(true);
 			}
 
-			var visibility = map.GetComponent<MapPart>().visibility;
+			var team = Ref.controller.Team;
+			var visibility = map.GetComponent<Visibility>();
 			for (var x = 0; x < mapSizeX; x++)
 				for (var z = 0; z < mapSizeZ; z++)
 				{
@@ -186,7 +187,7 @@ namespace RimBattle
 						continue;
 					}
 
-					if (visibility.IsVisible(idx) == false)
+					if (visibility.IsVisible(team, idx) == false)
 					{
 						texture.SetPixel(x, z, Ref.notVisibleColor);
 						continue;

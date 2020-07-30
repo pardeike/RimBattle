@@ -43,7 +43,7 @@ namespace RimBattle
 		static void Postfix()
 		{
 			if (Multiplayer.IsReplay() == false)
-				Ref.controller.MultiplayerEstablished();
+				Multiplayer.MultiplayerEstablished();
 		}
 	}
 
@@ -60,7 +60,7 @@ namespace RimBattle
 
 		static void Postfix()
 		{
-			Ref.controller.MultiplayerEstablished();
+			Multiplayer.MultiplayerEstablished();
 		}
 	}
 

@@ -1,6 +1,7 @@
 ﻿using Multiplayer.API;
 using RimWorld;
 using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -55,6 +56,15 @@ namespace RimBattle
 		public static void StartFormingCaravan(List<Pawn> pawns, List<Pawn> downedPawns, List<TransferableOneWay> transferables, IntVec3 meetingPoint, IntVec3 exitSpot, int startingTile, int destinationTile)
 		{
 			CaravanFormingUtility.StartFormingCaravan(pawns, downedPawns, Faction.OfPlayer, transferables, meetingPoint, exitSpot, startingTile, destinationTile);
+		}
+
+		[SyncMethod]
+		public static void UpdateVisibility(int team, Map map, int x, int z, float weaponRange)
+		{
+			var visibility = map.GetComponent<Visibility>();
+			map.DoInCircle(new IntVec3(x, 0, z), weaponRange, (px, pz) => visibility.MakeVisible(team, px, pz));
+			var radius = (int)Math.Ceiling(weaponRange);
+			map.MapMeshDirtyRect(x - radius, z - radius, x + radius, z + radius);
 		}
 	}
 }

@@ -35,37 +35,13 @@ namespace RimBattle
 	{
 		static readonly MethodInfo m_SetFactionDirect = SymbolExtensions.GetMethodInfo(() => new Thing().SetFactionDirect(default));
 
-		static readonly MethodInfo m_MySetFactionDirect1 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, default(Pawn)));
+		static readonly MethodInfo m_MySetFactionDirect1 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, default));
 		static void MySetFactionDirect(Thing thing, Faction newFaction, Pawn owner)
 		{
 			thing.SetFactionDirect(newFaction);
 			if (newFaction == Faction.OfPlayer)
 				CompOwnedBy.SetTeam(thing as ThingWithComps, owner);
 		}
-
-		// Seems not necessary anymore because we patch this in MPDesignators
-		//
-		/*static readonly MethodInfo m_MySetFactionDirect2 = SymbolExtensions.GetMethodInfo(() => MySetFactionDirect(default, default, 0));
-		static void MySetFactionDirect(Thing thing, Faction newFaction, int team)
-		{
-			thing.SetFactionDirect(newFaction);
-			if (newFaction == Faction.OfPlayer)
-				CompOwnedBy.SetTeam(thing as ThingWithComps, team);
-		}*/
-
-		/*static readonly MethodInfo m_PlaceBlueprintForBuild = SymbolExtensions.GetMethodInfo(() => GenConstruct.PlaceBlueprintForBuild(default, default, null, default, null, null));
-		static readonly MethodInfo m_MyPlaceBlueprintForBuild = SymbolExtensions.GetMethodInfo(() => MyPlaceBlueprintForBuild(default, default, null, default, null, null, 0));
-		static Blueprint_Build MyPlaceBlueprintForBuild(BuildableDef sourceDef, IntVec3 center, Map map, Rot4 rotation, Faction faction, ThingDef stuff, int team)
-		{
-			var blueprint = GenConstruct.PlaceBlueprintForBuild(sourceDef, center, map, rotation, faction, stuff);
-			CompOwnedBy.SetTeam(blueprint, team);
-			return blueprint;
-		}*/
-
-		/*static int CurrentTeam()
-		{
-			return Ref.controller.team;
-		}*/
 
 		static readonly MultiPatches multiPatches = new MultiPatches(
 			typeof(OwnedByTeam_MultiPatches),
@@ -78,17 +54,7 @@ namespace RimBattle
 				AccessTools.Method(typeof(Blueprint), nameof(Blueprint.TryReplaceWithSolidThing)),
 				m_SetFactionDirect, m_MySetFactionDirect1,
 				new CodeInstruction(OpCodes.Ldarg_1)
-			)/*,
-			new MultiPatchInfo(
-				AccessTools.Method(typeof(Designator_Build), nameof(Designator_Build.DesignateSingleCell)),
-				m_SetFactionDirect, m_MySetFactionDirect2,
-				new CodeInstruction(OpCodes.Call, SymbolExtensions.GetMethodInfo(() => CurrentTeam()))
-			),
-			new MultiPatchInfo(
-				AccessTools.Method(typeof(Designator_Build), nameof(Designator_Build.DesignateSingleCell)),
-				m_PlaceBlueprintForBuild, m_MyPlaceBlueprintForBuild,
-				new CodeInstruction(OpCodes.Call, SymbolExtensions.GetMethodInfo(() => CurrentTeam()))
-			)*/
+			)
 		);
 
 		static IEnumerable<MethodBase> TargetMethods()
@@ -126,7 +92,7 @@ namespace RimBattle
 				return true;
 			if (t is Building_Door door && door.FreePassage && method == "IsForbiddenToPass")
 				return true;
-			var thingTeam = t.OwnedByTeam();
+			var thingTeam = t.GetTeamID();
 			var workerTeam = pawn.GetTeamID();
 			return thingTeam < 0 || workerTeam < 0 || thingTeam == workerTeam;
 		}
@@ -236,7 +202,7 @@ namespace RimBattle
 				return;
 
 			var team = ___pawn.GetTeamID();
-			if (team < 0 || Ref.controller.IsMyTeam(team)) return;
+			if (team < 0 || Ref.controller.IsCurrentTeam(team)) return;
 
 			var pos = ___pawn.DrawPos + new Vector3(0.3f, 0.2f, -0.3f);
 			var matrix = default(Matrix4x4);
@@ -311,7 +277,7 @@ namespace RimBattle
 			// Designator_ZoneAdd.set_SelectedZone does some funky stuff 
 			if (forceDesignatorDeselect == false) return true;
 
-			return Tools.CanSelect(obj);
+			return Tools.CanSelect(Ref.controller.Team, obj);
 		}
 	}
 
@@ -320,9 +286,15 @@ namespace RimBattle
 	[HarmonyPatch]
 	class Designator_Cell_Patch
 	{
-		static bool IsVisible(Map map, IntVec3 loc)
+		static bool Accessible(Designator designator, IntVec3 loc)
 		{
-			return Tools.IsVisible(map, loc);
+			var map = designator.Map;
+			/*if (designator is Designator_Zone designatorZone)
+			{
+				var zone = map.zoneManager.ZoneAt(loc);
+				return zone.CanAccess();
+			}*/
+			return Tools.IsVisible(Ref.controller.Team, map, loc);
 		}
 
 		static IEnumerable<MethodBase> TargetMethods()
@@ -334,13 +306,11 @@ namespace RimBattle
 		{
 			if (codes.Count() > 2)
 			{
-				var m_get_Map = AccessTools.Property(typeof(Designator), nameof(Designator.Map)).GetGetMethod(true);
-				var m_IsVisible = SymbolExtensions.GetMethodInfo(() => IsVisible(null, IntVec3.Zero));
+				var m_Accesssible = SymbolExtensions.GetMethodInfo(() => Accessible(null, IntVec3.Zero));
 				var m_get_WasRejected = AccessTools.Method(typeof(AcceptanceReport), "get_WasRejected");
 				yield return new CodeInstruction(OpCodes.Ldarg_0);
-				yield return new CodeInstruction(OpCodes.Call, m_get_Map);
 				yield return new CodeInstruction(OpCodes.Ldarg_1);
-				yield return new CodeInstruction(OpCodes.Call, m_IsVisible);
+				yield return new CodeInstruction(OpCodes.Call, m_Accesssible);
 				var label = generator.DefineLabel();
 				yield return new CodeInstruction(OpCodes.Brtrue, label);
 				yield return new CodeInstruction(OpCodes.Call, m_get_WasRejected);
@@ -359,10 +329,10 @@ namespace RimBattle
 	{
 		static bool IsVisible(Thing thing)
 		{
-			var thingTeam = thing.OwnedByTeam();
+			/*var thingTeam = thing.OwnedByTeam();
 			if (thingTeam >= 0 && thingTeam != Ref.controller.team)
-				return false;
-			return Tools.IsVisible(thing);
+				return false;*/
+			return Tools.IsVisible(Ref.controller.Team, thing);
 		}
 
 		static IEnumerable<MethodBase> TargetMethods()
@@ -413,9 +383,8 @@ namespace RimBattle
 	{
 		static bool Prefix(Pawn ___pawn)
 		{
-			if (Ref.controller.battleOverview.showing) return false;
 			var controller = Ref.controller;
-			if (Tools.IsVisible(___pawn) == false)
+			if (Tools.IsVisible(Ref.controller.Team, ___pawn) == false)
 				return false;
 			return controller.IsInVisibleRange(___pawn);
 		}
@@ -429,8 +398,7 @@ namespace RimBattle
 	{
 		static bool Prefix(Thing __instance)
 		{
-			if (Ref.controller.battleOverview.showing) return false;
-			return Tools.IsVisible(__instance);
+			return Tools.IsVisible(Ref.controller.Team, __instance);
 		}
 	}
 
@@ -442,8 +410,7 @@ namespace RimBattle
 	{
 		static bool IsFogged(FogGrid grid, IntVec3 c)
 		{
-			if (Ref.controller.battleOverview.showing) return false;
-			if (Tools.IsVisible(Ref.map(grid), c) == false)
+			if (Tools.IsVisible(Ref.controller.Team, Ref.map(grid), c) == false)
 				return false;
 			return grid.IsFogged(c);
 		}
@@ -467,7 +434,7 @@ namespace RimBattle
 		static bool Prefix(Thing newThing, IntVec3 loc, Map map, ref Thing __result)
 		{
 			if (newThing is Mote && loc.InBounds(map))
-				if (Tools.IsVisible(map, loc) == false)
+				if (Tools.IsVisible(Ref.controller.Team, map, loc) == false)
 				{
 					__result = newThing;
 					return false;
@@ -501,7 +468,7 @@ namespace RimBattle
 	{
 		static bool IsVisible(Thing key)
 		{
-			return Tools.IsVisible(key.Map, key.Position);
+			return Tools.IsVisible(Ref.controller.Team, key.Map, key.Position);
 		}
 
 		static Instructions Transpiler(Instructions instructions, ILGenerator generator)
@@ -529,32 +496,113 @@ namespace RimBattle
 
 	// hide zones if not discovered
 	//
-	[HarmonyPatch]
+	/*[HarmonyPatch]
 	class SectionLayer_Zones_Regenerate_Patch
 	{
-		// jeez, why is this class internal
 		static MethodBase TargetMethod()
 		{
-			var type = AccessTools.TypeByName("SectionLayer_Zones");
-			return AccessTools.Method(type, "Regenerate");
+			var method = AccessTools.Method("Verse.SectionLayer_Zones:Regenerate");
+			"Method Verse.SectionLayer_Zones:Regenerate".NullCheck(method);
+			return method;
 		}
 
-		static bool Prefix(object __instance)
+		static void RegenerateZone(object __instance)
 		{
 			var myBase = __instance as SectionLayer;
-			if (myBase == null) return true;
+			if (myBase == null) return;
 			var section = Ref.SectionLayer_section(myBase);
 			CopiedMethods.RegenerateZone(myBase, section);
-			return false;
 		}
 
 		static Instructions Transpiler(Instructions codes)
 		{
-			_ = codes; // make compiler happy
-			var replacement = SymbolExtensions.GetMethodInfo(() => CopiedMethods.RegenerateFog(null));
+			_ = codes;
+			var m_RegenerateZone = SymbolExtensions.GetMethodInfo(() => RegenerateZone(null));
 			yield return new CodeInstruction(OpCodes.Ldarg_0);
-			yield return new CodeInstruction(OpCodes.Call, replacement);
+			yield return new CodeInstruction(OpCodes.Call, m_RegenerateZone);
 			yield return new CodeInstruction(OpCodes.Ret);
 		}
+	}*/
+
+	/*// only deal with owned zones (1)
+	//
+	[HarmonyPatch(typeof(GridsUtility))]
+	[HarmonyPatch(nameof(GridsUtility.GetZone))]
+	class GridsUtility_GetZone_Patch
+	{
+		static void Postfix(ref Zone __result)
+		{
+			if (__result == null)
+				return;
+			if (__result.CanAccess() == false)
+				__result = null;
+		}
 	}
+
+	// only deal with owned zones (2)
+	//
+	[HarmonyPatch(typeof(HaulAIUtility))]
+	[HarmonyPatch("HaulablePlaceValidator")]
+	class HaulAIUtility_HaulablePlaceValidator_Patch
+	{
+		static void Postfix(Thing haulable, Pawn worker, IntVec3 c, ref bool __result)
+		{
+			if (__result == false)
+				return;
+
+			var pawnTeam = worker.OwnedByTeam();
+			if (pawnTeam < 0)
+				return;
+
+			if (haulable != null && haulable.def.BlockPlanting)
+			{
+				var zone = worker.Map.zoneManager.ZoneAt(c);
+				if (zone.OwnedByTeam() != pawnTeam)
+					__result = false;
+			}
+		}
+	}
+
+	// only deal with owned zones (3)
+	//
+	[HarmonyPatch]
+	class Selector_SelectableObjects_Patches
+	{
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			yield return AccessTools.Method(typeof(Selector), "SelectableObjectsUnderMouse");
+			yield return AccessTools.Method(typeof(Selector), nameof(Selector.SelectableObjectsAt));
+		}
+
+		static IEnumerable<object> Postfix(IEnumerable<object> objects)
+		{
+			foreach (var obj in objects)
+			{
+				if (obj is Zone zone)
+					if (zone.CanAccess() == false)
+						continue;
+				yield return obj;
+			}
+		}
+	}
+
+	// only deal with owned zones (4)
+	//
+	[HarmonyPatch(typeof(WorkGiver_Grower))]
+	[HarmonyPatch(nameof(WorkGiver_Grower.PotentialWorkCellsGlobal))]
+	class WorkGiver_Grower_PotentialWorkCellsGlobal_Patch
+	{
+		static List<Zone> AllZones(ZoneManager zoneManager)
+		{
+			return zoneManager.AllZones.Where(Tools.CanAccess).ToList();
+		}
+
+		static Instructions Transpiler(Instructions codes)
+		{
+			return Transpilers.MethodReplacer(codes,
+				AccessTools.Property(typeof(ZoneManager), nameof(ZoneManager.AllZones)).GetGetMethod(true),
+				SymbolExtensions.GetMethodInfo(() => AllZones(null))
+			);
+		}
+	}*/
 }

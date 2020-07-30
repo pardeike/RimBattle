@@ -59,6 +59,8 @@ namespace RimBattle
 			for (var i = 0; i < count; i++)
 			{
 				var pawn = StartingPawnUtility.NewGeneratedStartingPawn();
+				pawn.playerSettings.hostilityResponse = Flags.defaultHostilityResponse;
+				Flags.setMinimumSkills.Do(skillDef => pawn.skills.GetSkill(skillDef).EnsureMinLevelWithMargin(1));
 				team.Add(pawn);
 				Find.GameInitData.startingAndOptionalPawns.Add(pawn);
 			}
@@ -364,6 +366,7 @@ namespace RimBattle
 		public static Pawn CreateTeamMaster()
 		{
 			var master = StartingPawnUtility.NewGeneratedStartingPawn();
+			master.relations.ClearAllRelations();
 			master.health.SetDead();
 			master.playerSettings.displayOrder = 1000 + Ref.controller.teams.Count;
 			Find.WorldPawns.PassToWorld(master, PawnDiscardDecideMode.KeepForever);
@@ -372,7 +375,7 @@ namespace RimBattle
 
 		// get if a thing is owned by a team
 		//
-		public static int OwnedByTeam(this Thing thing)
+		public static int GetTeamID(this Thing thing)
 		{
 			var ownedBy = (thing as ThingWithComps)?.GetComp<CompOwnedBy>();
 			return ownedBy != null ? ownedBy.team : -1;
@@ -382,7 +385,15 @@ namespace RimBattle
 		//
 		public static int OwnedByTeam(this Zone zone)
 		{
-			return (zone.ID / Ref.zoneIDFactor) - 1;
+			return zone == null ? -1 : (zone.ID / Ref.zoneIDFactor) - 1;
+		}
+
+		// is our zone?
+		//
+		public static bool CanAccess(this Zone zone, int team)
+		{
+			var zoneTeam = zone.OwnedByTeam();
+			return zoneTeam < 0 ? true : zoneTeam == team;
 		}
 
 		// set team of zone
@@ -407,7 +418,7 @@ namespace RimBattle
 				if (thing is Pawn pawn && pawn.GetTeamID() != actorTeam)
 					return JobCondition.Ongoing;
 
-				var ownedByTeam = thing.OwnedByTeam();
+				var ownedByTeam = thing.GetTeamID();
 				if (ownedByTeam < 0)
 					return JobCondition.Ongoing;
 
@@ -433,34 +444,32 @@ namespace RimBattle
 		//
 		public static void UpdateVisibility(Thing thing, IntVec3 pos)
 		{
-			if (!(thing is Pawn pawn)) return;
+			var pawn = thing as Pawn;
+			if (pawn == null || pawn.Faction != Faction.OfPlayer)
+				return;
 			var map = pawn.Map;
-			if (map == null) return;
-			if (pawn.Faction != Faction.OfPlayer) return;
-
-			var controller = Ref.controller;
-			if (controller.InMyTeam(pawn))
-			{
-				var visibility = map.GetComponent<MapPart>().visibility;
-				map.DoInCircle(pos, pawn.WeaponRange(), visibility.MakeVisible);
-				var radius = (int)Math.Ceiling(pawn.WeaponRange());
-				map.MapMeshDirtyRect(pos.x - radius, pos.z - radius, pos.x + radius, pos.z + radius);
-			}
+			if (map == null)
+				return;
+			var team = pawn.GetTeamID();
+			if (team >= 0)
+				Synced.UpdateVisibility(team, map, pos.x, pos.z, pawn.WeaponRange());
 		}
 
 		// check our visibility grid using a cell
 		//
-		public static bool IsVisible(Map map, IntVec3 loc)
+		public static bool IsVisible(int team, Map map, IntVec3 loc)
 		{
+			if (Ref.controller.battleOverview.showing) return false;
 			if (map == null) return false;
-			return map.GetComponent<MapPart>().visibility.IsVisible(loc);
+			return map.GetComponent<Visibility>().IsVisible(team, loc);
 		}
 
 		// check our visibility grid for a pawn
 		//
-		public static bool IsVisible(Thing pawn)
+		public static bool IsVisible(int team, Thing pawn)
 		{
-			return IsVisible(pawn.Map, pawn.Position);
+			if (Ref.controller.battleOverview.showing) return false;
+			return IsVisible(team, pawn.Map, pawn.Position);
 		}
 
 		// get weapon range or default for no weapon
@@ -495,18 +504,19 @@ namespace RimBattle
 
 		// test if an object is selectable (vanilla only allows Thing and Zone)
 		//
-		public static bool CanSelect(object obj)
+		public static bool CanSelect(int team, object obj)
 		{
 			if (obj == null)
 				return false;
 
 			var controller = Ref.controller;
-			if (obj is Zone zone)
+
+			/*if (obj is Zone zone)
 			{
 				if (zone.OwnedByTeam() != Ref.controller.team)
 					return false;
 				return zone.cells.Any(cell => IsVisible(zone.Map, cell));
-			}
+			}*/
 
 			var thing = obj as Thing;
 			if (thing == null)
@@ -518,10 +528,10 @@ namespace RimBattle
 			if (thing.def.size.x != 1 || thing.def.size.z != 1)
 			{
 				var map = thing.Map;
-				return thing.OccupiedRect().Cells.Any(cell => IsVisible(map, cell));
+				return thing.OccupiedRect().Cells.Any(cell => IsVisible(team, map, cell));
 			}
 
-			if (IsVisible(thing) == false)
+			if (IsVisible(team, thing) == false)
 				return false;
 
 			var pawn = thing as Pawn;
@@ -618,28 +628,6 @@ namespace RimBattle
 				action = delegate () { Find.WindowStack.Add(new Dialog_FormCaravan(Find.CurrentMap, false, null, false)); }
 			});
 		}
-
-		/*public static byte[] PackBoolsInByteArray(bool[] bools)
-		{
-			var len = bools.Length;
-			var bytes = len >> 3;
-			if ((len & 0x07) != 0) ++bytes;
-			var result = new byte[bytes + 4];
-			var lenBytes = BitConverter.GetBytes(len);
-			Array.Copy(lenBytes, result, 4);
-			for (var i = 0; i < bools.Length; i++)
-				if (bools[i])
-					result[4 + i >> 3] |= (byte)(1 << (i & 0x07));
-			return result;
-		}*/
-
-		/*public static bool[] UnpackByteArrayInBools(byte[] bytes)
-		{
-			var len = BitConverter.ToInt32(bytes, 0);
-			var result = new bool[len];
-
-			return result;
-		}*/
 
 		public static bool SimpleButton(Rect rect, string label, bool active)
 		{

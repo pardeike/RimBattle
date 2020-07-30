@@ -11,10 +11,11 @@ namespace RimBattle
 	{
 		// fog regeneration with extra visibility injected
 		//
-		public static void RegenerateFog(SectionLayer layer)
+		public static void RegenerateFog(SectionLayer_FogOfWar layer)
 		{
 			var section = Ref.SectionLayer_section(layer);
 			var map = section.map;
+			var team = Ref.controller.Team;
 
 			var subMesh = layer.GetSubMesh(MatBases.FogOfWar);
 			if (subMesh.mesh.vertexCount == 0)
@@ -22,13 +23,13 @@ namespace RimBattle
 			subMesh.Clear(MeshParts.Colors);
 
 			var fogGrid = map.fogGrid.fogGrid;
-			var visibleGrid = map.GetComponent<MapPart>().visibility.visible;
+			var visibleGrid = map.GetComponent<Visibility>();
 			var cellIndices = map.cellIndices;
 
-			bool FoggedOrNotVisible(int x, int y)
+			bool FoggedOrNotVisible(int x, int z)
 			{
-				var n = cellIndices.CellToIndex(x, y);
-				return visibleGrid[n] == 0 || fogGrid[n];
+				var idx = cellIndices.CellToIndex(x, z);
+				return visibleGrid.IsVisible(team, idx) == false || fogGrid[idx];
 			}
 
 			var cellRect = section.CellRect;
@@ -121,8 +122,9 @@ namespace RimBattle
 		public static void RegenerateZone(SectionLayer myBase, Section section)
 		{
 			var map = section.map;
-			var visibility = map.GetComponent<MapPart>().visibility;
+			var visibility = map.GetComponent<Visibility>();
 			var cellIndices = map.cellIndices;
+			var team = Ref.controller.Team;
 
 			var y = AltitudeLayer.Zone.AltitudeFor();
 			var zoneManager = map.zoneManager;
@@ -135,11 +137,11 @@ namespace RimBattle
 			for (var i = cellRect.minX; i <= cellRect.maxX; i++)
 				for (var j = cellRect.minZ; j <= cellRect.maxZ; j++)
 				{
-					if (visibility.IsVisible(cellIndices.CellToIndex(i, j)) == false)
+					if (visibility.IsVisible(team, cellIndices.CellToIndex(i, j)) == false)
 						continue;
 
 					var zone = zoneManager.ZoneAt(new IntVec3(i, 0, j));
-					if (zone != null && !zone.hidden && zone.OwnedByTeam() == Ref.controller.team)
+					if (zone != null && !zone.hidden/* && zone.OwnedByTeam() == Ref.controller.team*/)
 					{
 						var subMesh = myBase.GetSubMesh(zone.Material);
 						var count = subMesh.verts.Count;

@@ -2,6 +2,55 @@
 {
 	// maybe used later
 
+	/*[HarmonyPatch]
+	class MapPawn_FreeColonistsSpawned_Patch
+	{
+		static IEnumerable<MethodBase> TargetMethods()
+		{
+			yield return AccessTools.Property(typeof(MapPawns), nameof(MapPawns.FreeColonistsSpawned)).GetGetMethod(true);
+			yield return AccessTools.Method(typeof(Command_SetPlantToGrow), "WarnAsAppropriate");
+		}
+
+		static IEnumerable<Pawn> FreeMyColonistsSpawned(MapPawns mapPawns)
+		{
+			return mapPawns.FreeColonistsSpawned.Where(Ref.controller.InMyTeam);
+		}
+
+		static Instructions Transpiler(Instructions codes)
+		{
+			var m_get_FreeColonistsSpawned = AccessTools.Property(typeof(MapPawns), nameof(MapPawns.FreeColonistsSpawned)).GetGetMethod(true);
+			return codes.MethodReplacer(m_get_FreeColonistsSpawned, SymbolExtensions.GetMethodInfo(() => FreeMyColonistsSpawned(null)));
+		}
+	}*/
+
+	/*[HarmonyPatch(typeof(GenHostility))]
+	[HarmonyPatch(nameof(GenHostility.IsActiveThreatToPlayer))]
+	class GenHostility_IsActiveThreatToPlayer_Patch
+	{
+		static bool Prefix(IAttackTarget target, ref bool __result)
+		{
+			if (target is Pawn pawn && pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
+			{
+				__result = true;
+				return false;
+			}
+			return true;
+		}
+	}*/
+
+	/*[HarmonyPatch(typeof(GenHostility))]
+	[HarmonyPatch(nameof(GenHostility.AnyHostileActiveThreatTo))]
+	class GenHostility_AnyHostileActiveThreatTo_Patch
+	{
+		static void Postfix(Map map, ref bool __result)
+		{
+			if (__result)
+				return;
+			if (map.mapPawns.AllPawns.Any(pawn => pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false))
+				__result = true;
+		}
+	}*/
+
 	/*[HarmonyPatch(typeof(VerbTracker))]
 	[HarmonyPatch("CreateVerbTargetCommand")]
 	class VerbTracker_CreateVerbTargetCommand_Patch

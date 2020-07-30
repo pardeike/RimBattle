@@ -36,7 +36,6 @@ namespace RimBattle
 			{
 				Current.ProgramState = ProgramState.MapInitializing;
 
-				Ref.controller.mapSize = game.InitData.mapSize;
 				var mapSize = new IntVec3(game.InitData.mapSize, 1, game.InitData.mapSize);
 				game.World.info.initialMapSize = mapSize;
 				if (game.InitData.permadeath)
@@ -127,7 +126,7 @@ namespace RimBattle
 			var idx = Ref.controller.teamChoices.IndexOf(MP.PlayerName);
 			if (idx >= 0)
 			{
-				Ref.controller.team = idx;
+				Ref.controller.Team = idx;
 				Ref.controller.JoinTeam(idx);
 				Find.ColonistBar.MarkColonistsDirty();
 

@@ -12,8 +12,7 @@ namespace RimBattle
 {
 	using Instructions = IEnumerable<CodeInstruction>;
 
-	// make different teams hostile to each other
-	// - globally patch thing/thing method
+	// make different teams hostile to each other (1)
 	//
 	[HarmonyPatch(typeof(GenHostility))]
 	[HarmonyPatch(nameof(GenHostility.HostileTo))]
@@ -32,26 +31,7 @@ namespace RimBattle
 		}
 	}
 
-	// make different teams hostile to each other
-	// - globally patch IsActiveThreatToPlayer
-	//
-	[HarmonyPatch(typeof(GenHostility))]
-	[HarmonyPatch(nameof(GenHostility.IsActiveThreatToPlayer))]
-	class GenHostility_IsActiveThreatToPlayer_Patch
-	{
-		static bool Prefix(IAttackTarget target, ref bool __result)
-		{
-			if (target is Pawn pawn && pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false)
-			{
-				__result = true;
-				return false;
-			}
-			return true;
-		}
-	}
-
-	// make different teams hostile to each other
-	// - globally patch CausesTimeSlowdown
+	// make different teams hostile to each other (2)
 	//
 	[HarmonyPatch(typeof(Verb))]
 	[HarmonyPatch("CausesTimeSlowdown")]
@@ -70,24 +50,7 @@ namespace RimBattle
 		}
 	}
 
-	// make different teams hostile to each other
-	// - globally patch AnyHostileActiveThreatTo
-	//
-	[HarmonyPatch(typeof(GenHostility))]
-	[HarmonyPatch(nameof(GenHostility.AnyHostileActiveThreatTo))]
-	class GenHostility_AnyHostileActiveThreatTo_Patch
-	{
-		static void Postfix(Map map, ref bool __result)
-		{
-			if (__result)
-				return;
-			if (map.mapPawns.AllPawns.Any(pawn => pawn.IsColonist && Ref.controller.InMyTeam(pawn) == false))
-				__result = true;
-		}
-	}
-
-	// make different teams hostile to each other
-	// - globally patch GetPotentialTargetsFor
+	// make different teams hostile to each other (3)
 	//
 	[HarmonyPatch(typeof(AttackTargetsCache))]
 	[HarmonyPatch(nameof(AttackTargetsCache.GetPotentialTargetsFor))]
@@ -103,8 +66,7 @@ namespace RimBattle
 		}
 	}
 
-	// make different teams hostile to each other
-	// - handle indiviual cases
+	// make different teams hostile to each other (4)
 	//
 	[HarmonyPatch]
 	class Hostility_MultiPatches
@@ -121,7 +83,8 @@ namespace RimBattle
 		static readonly MethodInfo m_AlwaysHostileTo = SymbolExtensions.GetMethodInfo(() => AlwaysHostileTo(default, default));
 		static bool AlwaysHostileTo(Thing thing, Faction faction)
 		{
-			_ = thing; _ = faction;
+			_ = thing;
+			_ = faction;
 			return true;
 		}
 

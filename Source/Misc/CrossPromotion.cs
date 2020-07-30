@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 using RimWorld;
 using Steamworks;
 using System;
@@ -12,12 +12,10 @@ using UnityEngine;
 using Verse;
 using Verse.Steam;
 
-namespace RimBattle
+namespace CrossPromotionModule
 {
-	using Instructions = IEnumerable<CodeInstruction>;
-
 	[StaticConstructorOnStartup]
-	class CrossPromotion
+	static class CrossPromotion
 	{
 		const string _crosspromotion = "brrainz-crosspromotion";
 		internal const ulong userID = 76561197973010050;
@@ -30,13 +28,14 @@ namespace RimBattle
 
 		static CrossPromotion()
 		{
-			var instance = HarmonyInstance.Create(_crosspromotion);
-			if (instance.HasAnyPatches(_crosspromotion))
+			if (Harmony.HasAnyPatches(_crosspromotion))
 				return;
 
+			var instance = new Harmony(_crosspromotion);
+
 			_ = instance.Patch(
-				SymbolExtensions.GetMethodInfo(() => MainMenuDrawer.Init()),
-				postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => MainMenuDrawer_Init_Postfix()))
+				SymbolExtensions.GetMethodInfo(() => ModLister.RebuildModList()),
+				postfix: new HarmonyMethod(SymbolExtensions.GetMethodInfo(() => ModLister_RebuildModList_Postfix()))
 			);
 
 			_ = instance.Patch(
@@ -55,7 +54,7 @@ namespace RimBattle
 			);
 		}
 
-		static void MainMenuDrawer_Init_Postfix()
+		static void ModLister_RebuildModList_Postfix()
 		{
 			_ = ModPreviewPath(0);
 			new Thread(() => { FetchPromotionMods(); }).Start();
@@ -89,15 +88,16 @@ namespace RimBattle
 		static readonly MethodInfo m_EndGroup = SymbolExtensions.GetMethodInfo(() => GUI.EndGroup());
 		static readonly MethodInfo m_Promotion = SymbolExtensions.GetMethodInfo(() => PromotionLayout.Promotion(new Rect(), null));
 
-		static Instructions Page_ModsConfig_DoWindowContents_Transpiler(Instructions instructions, ILGenerator generator)
+		static IEnumerable<CodeInstruction> Page_ModsConfig_DoWindowContents_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
-			var beginGroupIndicies = instructions
+			var list = instructions.ToList();
+			var beginGroupIndicies = list
 				.Select((instr, idx) => new Pair<int, CodeInstruction>(idx, instr))
-				.Where(pair => pair.Second.operand == m_BeginGroup)
+				.Where(pair => pair.Second.operand is MethodInfo mi && mi == m_BeginGroup)
 				.Select(pair => pair.First).ToArray();
-			var endGroupIndicies = instructions
+			var endGroupIndicies = list
 				.Select((instr, idx) => new Pair<int, CodeInstruction>(idx, instr))
-				.Where(pair => pair.Second.operand == m_EndGroup)
+				.Where(pair => pair.Second.operand is MethodInfo mi && mi == m_EndGroup)
 				.Select(pair => pair.First).ToArray();
 			if (beginGroupIndicies.Length != 2 || endGroupIndicies.Length != 2)
 				return instructions;
@@ -105,10 +105,9 @@ namespace RimBattle
 			var iEnd = endGroupIndicies[0];
 
 			var jump = generator.DefineLabel();
-			var codes = instructions.ToList();
-			codes[iEnd + 1].labels.Add(jump);
-			var localPositionVar = codes[iBegin];
-			codes.InsertRange(iBegin, new[]
+			list[iEnd + 1].labels.Add(jump);
+			var localPositionVar = list[iBegin];
+			list.InsertRange(iBegin, new[]
 			{
 					localPositionVar.Clone(),
 					new CodeInstruction(OpCodes.Ldarg_0),
@@ -116,7 +115,7 @@ namespace RimBattle
 					new CodeInstruction(OpCodes.Brtrue, jump)
 				});
 
-			return codes.AsEnumerable();
+			return list.AsEnumerable();
 		}
 
 		internal static string ModPreviewPath(ulong modID)
@@ -127,6 +126,22 @@ namespace RimBattle
 			return dir + modID + "-preview.jpg";
 		}
 
+		internal static byte[] SafeRead(string path)
+		{
+			for (var i = 1; i <= 5; i++)
+			{
+				try
+				{
+					return File.ReadAllBytes(path);
+				}
+				catch (Exception)
+				{
+					Thread.Sleep(250);
+				}
+			}
+			return null;
+		}
+
 		internal static Texture2D PreviewForMod(ulong modID)
 		{
 			if (previewTextures.TryGetValue(modID, out var texture))
@@ -135,7 +150,7 @@ namespace RimBattle
 			if (File.Exists(path) == false)
 				return null;
 			texture = new Texture2D(1, 1, TextureFormat.ARGB32, false);
-			if (texture.LoadImage(File.ReadAllBytes(path)))
+			if (texture.LoadImage(SafeRead(path)))
 				previewTextures[modID] = texture;
 			return texture;
 		}
@@ -168,7 +183,7 @@ namespace RimBattle
 			resultHandle.Set(call, null);
 		}
 
-		internal static void FetchPromotionMods()
+		public static void FetchPromotionMods()
 		{
 			if (SteamManager.Initialized == false)
 				return;
@@ -251,7 +266,7 @@ namespace RimBattle
 			var mainModID = mod.GetPublishedFileId().m_PublishedFileId;
 			var promoMods = CrossPromotion.promotionMods.ToArray();
 			var thisMod = promoMods.FirstOrDefault(m => m.m_nPublishedFileId.m_PublishedFileId == mainModID);
-			var isLocalFile = ModLister.AllInstalledMods.Any(meta => meta.GetPublishedFileId().m_PublishedFileId == mainModID && meta.Source == ContentSource.LocalFolder);
+			var isLocalFile = ModLister.AllInstalledMods.Any(meta => meta.GetPublishedFileId().m_PublishedFileId == mainModID && meta.Source == ContentSource.ModsFolder);
 			var isSubbed = workshopMods.Contains(mainModID);
 
 			if (CrossPromotion.lastPresentedMod != mainModID)
@@ -338,7 +353,7 @@ namespace RimBattle
 			foreach (var promoMod in promoMods)
 			{
 				var myModID = promoMod.m_nPublishedFileId.m_PublishedFileId;
-				var isLocalFile = ModLister.AllInstalledMods.Any(meta => meta.GetPublishedFileId().m_PublishedFileId == myModID && meta.Source == ContentSource.LocalFolder);
+				var isLocalFile = ModLister.AllInstalledMods.Any(meta => meta.GetPublishedFileId().m_PublishedFileId == myModID && meta.Source == ContentSource.ModsFolder);
 				var isSubbed = workshopMods.Contains(myModID);
 				_ = CrossPromotion.allVoteStati.TryGetValue(myModID, out var voteStatus);
 
@@ -359,7 +374,7 @@ namespace RimBattle
 			foreach (var promoMod in promoMods)
 			{
 				var myModID = promoMod.m_nPublishedFileId.m_PublishedFileId;
-				var isLocalFile = ModLister.AllInstalledMods.Any(meta => meta.GetPublishedFileId().m_PublishedFileId == myModID && meta.Source == ContentSource.LocalFolder);
+				var isLocalFile = ModLister.AllInstalledMods.Any(meta => meta.GetPublishedFileId().m_PublishedFileId == myModID && meta.Source == ContentSource.ModsFolder);
 				var isSubbed = workshopMods.Contains(myModID);
 				var isActive = activeMods.Contains(myModID);
 				_ = CrossPromotion.allVoteStati.TryGetValue(myModID, out var voteStatus);
@@ -402,9 +417,9 @@ namespace RimBattle
 							{
 								if (isSubbed || isLocalFile)
 								{
-									var orderedMods = (IEnumerable<ModMetaData>)AccessTools.Method(typeof(Page_ModsConfig), "ModsInListOrder").Invoke(page, new object[0]);
+									var orderedMods = (IEnumerable<ModMetaData>)AccessTools.Method(typeof(Page_ModsConfig), "ModsInListOrder").Invoke(page, Array.Empty<object>());
 									page.selectedMod = orderedMods.FirstOrDefault(meta => meta.GetPublishedFileId().m_PublishedFileId == myModID);
-									var modsBefore = orderedMods.IndexOf(m => m == page.selectedMod);
+									var modsBefore = orderedMods.ToList().FindIndex(m => m == page.selectedMod);
 									if (modsBefore >= 0)
 										_ = Traverse.Create(page).Field("modListScrollPosition").SetValue(new Vector2(0f, modsBefore * 26f + 4f));
 								}

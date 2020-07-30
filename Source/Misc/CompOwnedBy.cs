@@ -58,7 +58,10 @@ namespace RimBattle
 
 		public override void PostDraw()
 		{
-			if (parent == null || Ref.controller.team == team || team < 0)
+			var currentTeam = Ref.controller.Team;
+			if (parent == null || currentTeam == team || team < 0)
+				return;
+			if (Tools.IsVisible(currentTeam, parent.Map, parent.DrawPos.ToIntVec3()) == false)
 				return;
 
 			var matrix = default(Matrix4x4);

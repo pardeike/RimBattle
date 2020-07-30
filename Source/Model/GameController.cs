@@ -13,23 +13,33 @@ namespace RimBattle
 		public int teamCount = 2;
 		public int totalTickets = 20;
 		public int maxQuadrums = 8; // 2 years
-
-		public int mapSize;
 		public List<int> tiles;
-
-		public BattleOverview battleOverview;
-		public List<MapPart> mapParts;
-		public List<string> teamChoices = new List<string> { "", "", "", "", "", "", "" };
-
-		public int team;
 		public List<Team> teams = new List<Team>();
+
+		// transient properties
+		public int Team { get; set; } = 0;
+		public BattleOverview battleOverview = new BattleOverview();
+		public List<MapPart> mapPartRefs = new List<MapPart>();
+		public List<string> teamChoices = new List<string> { "", "", "", "", "", "", "" };
 
 		public GameController(Game game) : base()
 		{
 			_ = game;
-			team = 0;
-			mapParts = new List<MapPart>();
-			battleOverview = new BattleOverview();
+		}
+
+		public override void GameComponentTick()
+		{
+			battleOverview.Update();
+		}
+
+		public void OnGUI()
+		{
+			if (ToggleBattle.BattleMap?.KeyDownEvent ?? false)
+			{
+				Event.current.Use();
+				ToggleBattle.Toggle();
+			}
+			battleOverview.OnGUI();
 		}
 
 		public Team CreateTeam()
@@ -39,16 +49,9 @@ namespace RimBattle
 			return t;
 		}
 
-		public Team GetTeam(Pawn pawn)
-		{
-			var teamId = pawn.GetTeamID();
-			if (teamId < 0) return null;
-			return teams[teamId];
-		}
-
 		public void JoinTeam(int team)
 		{
-			this.team = team;
+			Team = team;
 			Multiplayer.CurrentPlayer.teamID = team;
 
 			// TODO: find a way to remove this ridiculous loop
@@ -74,28 +77,21 @@ namespace RimBattle
 			}
 		}
 
-		public bool IsMyTeam(int team)
+		public Team CurrentTeam => teams[Team];
+
+		public bool IsCurrentTeam(int team)
 		{
-			return this.team == team;
+			return Team == team;
 		}
 
-		public Team CurrentTeam => teams[team];
+		public bool InMyTeam(Pawn pawn)
+		{
+			return pawn != null && pawn.GetTeamID() == Team;
+		}
 
 		public void CreateMapPart(Map map)
 		{
-			mapSize = map.Size.x;
-			mapParts.Add(map.GetComponent<MapPart>());
-		}
-
-		public void MultiplayerEstablished()
-		{
-			Multiplayer.IsUsingAsyncTime = MPTools.IsAsyncTime();
-			GameState.ConnectPlayers();
-		}
-
-		public override void GameComponentTick()
-		{
-			battleOverview.Update();
+			mapPartRefs.Add(map.GetComponent<MapPart>());
 		}
 
 		public int TileIndex(int tile)
@@ -121,14 +117,9 @@ namespace RimBattle
 			return CanReach(mapFrom.Tile, mapTo.Tile);
 		}
 
-		public bool InMyTeam(Pawn pawn)
-		{
-			return pawn != null && pawn.GetTeamID() == team;
-		}
-
 		public IEnumerable<Pawn> MyColonistsOn(Map map, bool includeTameAnimals = true)
 		{
-			foreach (var pawn in teams[team].members.Where(pawn => pawn.Map == map))
+			foreach (var pawn in teams[Team].members.Where(pawn => pawn.Map == map))
 				yield return pawn;
 			if (includeTameAnimals == false)
 				yield break;
@@ -143,20 +134,11 @@ namespace RimBattle
 
 		public bool IsInVisibleRange(Pawn pawn)
 		{
+			if (Ref.controller.battleOverview.showing) return false;
 			if (InMyTeam(pawn)) return true;
 			var pos = pawn.Position;
 			return MyColonistsOn(pawn.Map)
 				.Any(myColonist => myColonist.Position.DistanceToSquared(pos) <= myColonist.WeaponRange(true));
-		}
-
-		public void OnGUI()
-		{
-			if (ToggleBattle.BattleMap?.KeyDownEvent ?? false)
-			{
-				Event.current.Use();
-				ToggleBattle.Toggle();
-			}
-			battleOverview.OnGUI();
 		}
 
 		public override void ExposeData()
@@ -170,11 +152,10 @@ namespace RimBattle
 			Scribe_Collections.Look(ref teams, "teams", LookMode.Deep);
 			Scribe_Collections.Look(ref teamChoices, "teamChoices");
 
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs)
 			{
 				Ref.controller = Current.Game.GetComponent<GameController>();
-				foreach (var map in Current.Game.Maps)
-					CreateMapPart(map);
+				mapPartRefs = Current.Game.Maps.Select(map => map.GetComponent<MapPart>()).ToList();
 			}
 		}
 

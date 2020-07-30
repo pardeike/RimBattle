@@ -23,7 +23,7 @@ namespace RimBattle
 
 		static void SyncWriteCurrentTeam(object byteWriter)
 		{
-			MPTools.SyncWrite(byteWriter, Ref.controller.team);
+			MPTools.SyncWrite(byteWriter, Ref.controller.Team);
 		}
 
 		static Instructions Transpiler(Instructions codes)
@@ -69,11 +69,11 @@ namespace RimBattle
 				return;
 			}
 			designator.DesignateMultiCell(cells);
-			if (designator is Designator_ZoneAdd zoneAddDesignator)
+			/*if (designator is Designator_ZoneAdd zoneAddDesignator)
 			{
 				var team = MPTools.SyncRead<int>(data);
 				Find.Selector.SelectedZone.SetTeam(team);
-			}
+			}*/
 		}
 
 		static readonly MethodInfo m_DesignateThing = AccessTools.Method(typeof(Designator), "DesignateThing");

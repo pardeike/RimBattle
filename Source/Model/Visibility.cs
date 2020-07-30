@@ -1,46 +1,71 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using Verse;
 
 namespace RimBattle
 {
-	public class Visibility : IExposable
+	public class Visibility : MapComponent
 	{
-		private readonly Map map;
+		private List<bool[]> visibleCells;
 
-		private string id;
-		public byte[] visible;
-
-		public Visibility(Map map)
+		public Visibility(Map map) : base(map)
 		{
-			this.map = map;
-			id = Guid.NewGuid().ToString();
-			visible = new byte[map.Size.x * map.Size.z];
+			var cellCount = map.Size.x * map.Size.z;
+			visibleCells = new List<bool[]>();
+			var controller = Current.Game.GetComponent<GameController>();
+			for (var team = 0; team < controller.teamCount; team++)
+			{
+				var cells = new bool[cellCount];
+				if (Flags.unfogEverything)
+					for (var i = 0; i < cellCount; i++)
+						cells[i] = true;
+				visibleCells.Add(cells);
+			}
 		}
 
-		public void ExposeData()
+		public bool[] GetCells(int team)
 		{
-			Scribe_Values.Look(ref id, "id");
+			return visibleCells[team];
+		}
 
-			if (Scribe.mode == LoadSaveMode.Saving)
-				Tools.SaveFile(id.ToString(), visible);
+		public override void ExposeData()
+		{
+			base.ExposeData();
 
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
-				visible = Tools.LoadFile(id.ToString(), () => new byte[map.Size.x * map.Size.z]);
+				visibleCells = new List<bool[]>();
+
+			var controller = Current.Game.GetComponent<GameController>();
+			for (var team = 0; team < controller.teamCount; team++)
+			{
+				if (Scribe.mode == LoadSaveMode.Saving)
+				{
+					var cells = visibleCells[team];
+					DataExposeUtility.BoolArray(ref cells, map.Size.x * map.Size.z, $"cells{team}");
+				}
+				if (Scribe.mode == LoadSaveMode.LoadingVars)
+				{
+					bool[] cells = null;
+					DataExposeUtility.BoolArray(ref cells, map.Size.x * map.Size.z, $"cells{team}");
+					visibleCells.Add(cells);
+				}
+			}
 		}
 
-		public void MakeVisible(int x, int z)
+		public void MakeVisible(int team, int x, int z)
 		{
-			visible[z * map.Size.x + x] = 1;
+			if (x >= 0 && x < map.Size.x && z >= 0 && z < map.Size.z)
+				(visibleCells[team])[z * map.Size.x + x] = true;
 		}
 
-		public bool IsVisible(int idx)
+		public bool IsVisible(int team, int idx)
 		{
-			return visible[idx] != 0;
+			return (visibleCells[team])[idx];
 		}
 
-		public bool IsVisible(IntVec3 cell)
+		public bool IsVisible(int team, IntVec3 cell)
 		{
-			return visible[cell.z * map.Size.x + cell.x] != 0;
+			if (cell.x < 0 || cell.z < 0 || cell.x >= map.Size.x || cell.z >= map.Size.z) return false;
+			return (visibleCells[team])[cell.z * map.Size.x + cell.x];
 		}
 	}
 }

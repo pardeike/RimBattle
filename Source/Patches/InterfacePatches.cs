@@ -154,7 +154,7 @@ namespace RimBattle
 		static IEnumerable<Pawn> Postfix(IEnumerable<Pawn> pawns)
 		{
 			_ = pawns;
-			foreach (var pawn in Ref.controller.teams[Ref.controller.team].members)
+			foreach (var pawn in Ref.controller.CurrentTeam.members)
 				yield return pawn;
 		}
 	}
@@ -336,29 +336,6 @@ namespace RimBattle
 		}
 	}
 
-	// make other team members show the same UX like non-colonists (2)
-	//
-	[HarmonyPatch]
-	class MapPawn_FreeColonistsSpawned_Patch
-	{
-		static IEnumerable<MethodBase> TargetMethods()
-		{
-			yield return AccessTools.Property(typeof(MapPawns), nameof(MapPawns.FreeColonistsSpawned)).GetGetMethod(true);
-			yield return AccessTools.Method(typeof(Command_SetPlantToGrow), "WarnAsAppropriate");
-		}
-
-		static IEnumerable<Pawn> FreeMyColonistsSpawned(MapPawns mapPawns)
-		{
-			return mapPawns.FreeColonistsSpawned.Where(Ref.controller.InMyTeam);
-		}
-
-		static Instructions Transpiler(Instructions codes)
-		{
-			var m_get_FreeColonistsSpawned = AccessTools.Property(typeof(MapPawns), nameof(MapPawns.FreeColonistsSpawned)).GetGetMethod(true);
-			return codes.MethodReplacer(m_get_FreeColonistsSpawned, SymbolExtensions.GetMethodInfo(() => FreeMyColonistsSpawned(null)));
-		}
-	}
-
 	// remove react button from non team members
 	//
 	[HarmonyPatch(typeof(MainTabWindow_Inspect))]
@@ -498,8 +475,8 @@ namespace RimBattle
 
 		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, ThingWithComps __instance)
 		{
-			var team = __instance.OwnedByTeam();
-			if (team != -1 && team != Ref.controller.team)
+			var team = __instance.GetTeamID();
+			if (team != -1 && Ref.controller.IsCurrentTeam(team) == false)
 				yield break;
 
 			foreach (var gimzo in gizmos)
@@ -520,7 +497,7 @@ namespace RimBattle
 		static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> gizmos, Zone __instance)
 		{
 			var team = __instance.OwnedByTeam();
-			if (team != -1 && team != Ref.controller.team)
+			if (team != -1 && Ref.controller.IsCurrentTeam(team) == false)
 				yield break;
 
 			foreach (var gimzo in gizmos)
@@ -546,23 +523,48 @@ namespace RimBattle
 
 	// kill feed
 	//
-	[HarmonyPatch(typeof(Pawn))]
+	/*[HarmonyPatch(typeof(Pawn))]
 	[HarmonyPatch(nameof(Pawn.Kill))]
 	class Pawn_Kill_Patch
 	{
 		static void Prefix(Pawn __instance, DamageInfo? dinfo)
 		{
-			if (dinfo == null || dinfo.HasValue == false) return;
-			var killer = dinfo.Value.Instigator as Pawn;
-			if (killer == null) return;
-			var weapon = "";
-			if (dinfo.Value.Weapon != null && dinfo.Value.Weapon != ThingDefOf.Human)
-				weapon = "with " + Find.ActiveLanguageWorker.WithIndefiniteArticle(dinfo.Value.Weapon.label, killer.gender);
+			Log.Warning($"__instance = {__instance}");
+			Log.Warning($"dinfo = {dinfo}");
+			Log.Warning($"dinfo.HasValue = {dinfo.HasValue}");
 
-			var message = $"{killer.Name.ToStringShort} killed {__instance.Name.ToStringShort} {weapon}";
-			Messages.Message(message, killer, MessageTypeDefOf.PositiveEvent, true);
+			var n = 0f;
+			try
+			{
+				n++;
+				if (dinfo == null || dinfo.HasValue == false) return;
+				n++;
+				var killer = dinfo.Value.Instigator as Pawn;
+				n++;
+				if (killer == null) return;
+				n++;
+				var weapon = "";
+				n++;
+				if (dinfo.Value.Weapon != null && dinfo.Value.Weapon != ThingDefOf.Human)
+				{
+					n += 0.25f;
+					weapon = "with " + Find.ActiveLanguageWorker.WithIndefiniteArticle(dinfo.Value.Weapon.label, killer.gender);
+					n += 0.5f;
+				}
+
+				n++;
+				var message = $"{killer.Name.ToStringShort} killed {__instance.Name.ToStringShort} {weapon}";
+				n++;
+				Messages.Message(message, killer, MessageTypeDefOf.PositiveEvent, true);
+				n++;
+				Log.Warning($"Done Kill");
+			}
+			catch (Exception e)
+			{
+				Log.Warning($"Last n = {n}: {e}");
+			}
 		}
-	}
+	}*/
 
 	// suppress other teams colonist died alerts
 	//

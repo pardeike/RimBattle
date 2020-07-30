@@ -301,7 +301,7 @@ namespace RimBattle
 			bool IsPrisoner(Thing thing) => thing is Pawn && ((Pawn)thing).IsPrisoner;
 			bool IsCaptured(Thing thing) => thing is Pawn && ((Pawn)thing).Downed && CaravanUtility.ShouldAutoCapture((Pawn)thing, Faction.OfPlayer);
 			bool IsAnimal(Thing thing) => thing is Pawn && ((Pawn)thing).RaceProps.Animal; // TODO: add support for team animals
-			bool IsItem(Thing thing) => (thing is Pawn) == false && Tools.IsVisible(thing);
+			bool IsItem(Thing thing) => (thing is Pawn) == false && Tools.IsVisible(Ref.controller.Team, thing);
 
 			pawnsTransfer = new TransferableOneWayWidget(transferables, null, null, thingCountTip, true, ignorePawnInventoryMass, false, availableMassGetter, 0f, ignoreSpawnedCorpsesGearAndInventoryMass, tile, true, false, false, true, false, true, playerPawnsReadOnly);
 			Ref.TransferableOneWayWidget_sections(pawnsTransfer).Clear();
@@ -342,7 +342,7 @@ namespace RimBattle
 
 		static void DrawCaravanInfo(CaravanUIUtility.CaravanInfo p1, CaravanUIUtility.CaravanInfo? p2, int p3, int? p4, float p5, Rect p6, bool p7, string p8, bool p9)
 		{
-			_ = p1; _ = p2; _ = p3; _ = p4; _ = p5; _ = p6; _ = p7; _ = p8; _ = p9; // make compiler happy
+			_ = p1; _ = p2; _ = p3; _ = p4; _ = p5; _ = p6; _ = p7; _ = p8; _ = p9;
 		}
 
 		public static TabRecord DrawTabsSingle(Rect baseRect, List<TabRecord> tabs, float maxTabWidth)
