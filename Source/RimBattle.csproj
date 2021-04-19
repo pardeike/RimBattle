@@ -1,112 +1,112 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{73B6D837-12FE-4A2F-938C-5B316263978E}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>RimBattle</RootNamespace>
-    <AssemblyName>RimBattle</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <NoWarn>IDE0051</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\Assemblies\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\Assemblies\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DebugSymbols>false</DebugSymbols>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="Main\GameState.cs" />
-    <Compile Include="Misc\PlayerConnectDialog.cs" />
-    <Compile Include="Multiplayer\MPEnums.cs" />
-    <Compile Include="Multiplayer\MPEvents.cs" />
-    <Compile Include="Multiplayer\MPDesignators.cs" />
-    <Compile Include="Multiplayer\MPPatches.cs" />
-    <Compile Include="Multiplayer\MPTools.cs" />
-    <Compile Include="Multiplayer\Multiplayer.cs" />
-    <Compile Include="Misc\CompOwnedBy.cs" />
-    <Compile Include="Multiplayer\PlayerInfo.cs" />
-    <Compile Include="Multiplayer\Synced.cs" />
-    <Compile Include="Multiplayer\SyncWorkers.cs" />
-    <Compile Include="Patches\HositilityPatches.cs" />
-    <Compile Include="Patches\InterfacePatches.cs" />
-    <Compile Include="Main\MultiPatches.cs" />
-    <Compile Include="UX\BattleOverview.cs" />
-    <Compile Include="UX\ConfigGUI.cs" />
-    <Compile Include="Patches\CopiedMethods.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Model\MapPart.cs" />
-    <Compile Include="UX\MiniMap.cs" />
-    <Compile Include="Misc\CrossPromotion.cs" />
-    <Compile Include="Model\GameController.cs" />
-    <Compile Include="Misc\FormBattleCaravan.cs" />
-    <Compile Include="Misc\ToggleBattle.cs" />
-    <Compile Include="Misc\ModCounter.cs" />
-    <Compile Include="Main\Main.cs" />
-    <Compile Include="Patches\CaravanePatches.cs" />
-    <Compile Include="Patches\GeneralPatches.cs" />
-    <Compile Include="Patches\NewGamePatches.cs" />
-    <Compile Include="Patches\VisibilityPatches.cs" />
-    <Compile Include="Patches\Unused.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Main\Statics.cs" />
-    <Compile Include="Main\Settings.cs" />
-    <Compile Include="Model\Team.cs" />
-    <Compile Include="Main\Tools.cs" />
-    <Compile Include="Misc\MouseExtraTile.cs" />
-    <None Include="packages.config" />
-    <None Include="Misc\TranspilerHelpers.cs" />
-    <Compile Include="Model\Visibility.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="0Harmony, Version=2.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Lib.Harmony.2.0.2\lib\net472\0Harmony.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="0MultiplayerAPI">
-      <HintPath>D:\Program Files (x86)\Steam\steamapps\workshop\content\294100\1752864297\Assemblies\0MultiplayerAPI.dll</HintPath>
-    </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>D:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>D:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.XML" />
-    <Reference Include="UnityEngine">
-      <HintPath>D:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>ModBuilder AssemblyVersion -file "$(TargetPath)" -save "$(ProjectName)-version"
+<Project ToolsVersion="14.0" DefaultTargets="Build"
+	xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+	<PropertyGroup>
+		<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+		<Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+		<ProjectGuid>{73B6D837-12FE-4A2F-938C-5B316263978E}</ProjectGuid>
+		<OutputType>Library</OutputType>
+		<AppDesignerFolder>Properties</AppDesignerFolder>
+		<RootNamespace>RimBattle</RootNamespace>
+		<AssemblyName>RimBattle</AssemblyName>
+		<TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+		<FileAlignment>512</FileAlignment>
+		<TargetFrameworkProfile />
+		<NoWarn>IDE0051</NoWarn>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>full</DebugType>
+		<Optimize>false</Optimize>
+		<OutputPath>..\Assemblies\</OutputPath>
+		<DefineConstants>TRACE;DEBUG</DefineConstants>
+		<ErrorReport>prompt</ErrorReport>
+		<WarningLevel>4</WarningLevel>
+		<UseVSHostingProcess>false</UseVSHostingProcess>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+		<DebugType>none</DebugType>
+		<Optimize>true</Optimize>
+		<OutputPath>..\Assemblies\</OutputPath>
+		<DefineConstants>DEBUG;TRACE</DefineConstants>
+		<ErrorReport>prompt</ErrorReport>
+		<WarningLevel>4</WarningLevel>
+		<DebugSymbols>false</DebugSymbols>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Include="Main\GameState.cs" />
+		<Compile Include="Misc\PlayerConnectDialog.cs" />
+		<Compile Include="Multiplayer\MPEnums.cs" />
+		<Compile Include="Multiplayer\MPEvents.cs" />
+		<Compile Include="Multiplayer\MPDesignators.cs" />
+		<Compile Include="Multiplayer\MPPatches.cs" />
+		<Compile Include="Multiplayer\MPTools.cs" />
+		<Compile Include="Multiplayer\Multiplayer.cs" />
+		<Compile Include="Misc\CompOwnedBy.cs" />
+		<Compile Include="Multiplayer\PlayerInfo.cs" />
+		<Compile Include="Multiplayer\Synced.cs" />
+		<Compile Include="Multiplayer\SyncWorkers.cs" />
+		<Compile Include="Patches\HositilityPatches.cs" />
+		<Compile Include="Patches\InterfacePatches.cs" />
+		<Compile Include="Main\MultiPatches.cs" />
+		<Compile Include="UX\BattleOverview.cs" />
+		<Compile Include="UX\ConfigGUI.cs" />
+		<Compile Include="Patches\CopiedMethods.cs" />
+		<Compile Include="GlobalSuppressions.cs" />
+		<Compile Include="Model\MapPart.cs" />
+		<Compile Include="UX\MiniMap.cs" />
+		<Compile Include="Misc\CrossPromotion.cs" />
+		<Compile Include="Model\GameController.cs" />
+		<Compile Include="Misc\FormBattleCaravan.cs" />
+		<Compile Include="Misc\ToggleBattle.cs" />
+		<Compile Include="Misc\ModCounter.cs" />
+		<Compile Include="Main\Main.cs" />
+		<Compile Include="Patches\CaravanePatches.cs" />
+		<Compile Include="Patches\GeneralPatches.cs" />
+		<Compile Include="Patches\NewGamePatches.cs" />
+		<Compile Include="Patches\VisibilityPatches.cs" />
+		<Compile Include="Patches\Unused.cs" />
+		<Compile Include="Properties\AssemblyInfo.cs" />
+		<Compile Include="Main\Statics.cs" />
+		<Compile Include="Main\Settings.cs" />
+		<Compile Include="Model\Team.cs" />
+		<Compile Include="Main\Tools.cs" />
+		<Compile Include="Misc\MouseExtraTile.cs" />
+		<None Include="packages.config" />
+		<None Include="Misc\TranspilerHelpers.cs" />
+		<Compile Include="Model\Visibility.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<Reference Include="0Harmony, Version=2.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+			<HintPath>..\packages\Lib.Harmony.2.0.2\lib\net472\0Harmony.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="0MultiplayerAPI">
+			<HintPath>D:\Program Files (x86)\Steam\steamapps\workshop\content\294100\1752864297\Assemblies\0MultiplayerAPI.dll</HintPath>
+		</Reference>
+		<Reference Include="Assembly-CSharp">
+			<HintPath>D:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Assembly-CSharp-firstpass">
+			<HintPath>D:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="System" />
+		<Reference Include="System.XML" />
+		<Reference Include="UnityEngine">
+			<HintPath>D:\Program Files (x86)\Steam\steamapps\common\RimWorld\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+	<Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+	<PropertyGroup>
+		<PostBuildEvent>ModBuilder AssemblyVersion -file "$(TargetPath)" -save "$(ProjectName)-version"
 ModBuilder XMLPut -file "$(SolutionDir)About\Manifest.xml" -xpath /Manifest/version -value "{{$(ProjectName)-version}}"
-ModBuilder XMLPut -file "$(SolutionDir)About\ModSync.xml" -xpath /ModSyncNinjaData/Version -value "{{$(ProjectName)-version}}"
 "$(ProjectDir)Install.bat" $(ConfigurationName) "$(ProjectDir)" "$(ProjectName)" "About Assemblies Textures"</PostBuildEvent>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+	</PropertyGroup>
+	<!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>
